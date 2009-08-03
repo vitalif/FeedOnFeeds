@@ -188,7 +188,7 @@ CREATE TABLE IF NOT EXISTS `$FOF_FEED_TABLE` (
   `feed_cache_attempt_date` int(11) default '0',
   `feed_cache` text,
   PRIMARY KEY  (`feed_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM;
 EOQ;
 
 $tables[] = <<<EOQ
@@ -206,7 +206,7 @@ CREATE TABLE IF NOT EXISTS `$FOF_ITEM_TABLE` (
   KEY `feed_id` (`feed_id`),
   KEY `item_guid` (`item_guid`(255)),
   KEY `feed_id_item_cached` (`feed_id`,`item_cached`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM;
 EOQ;
 
 $tables[] = <<<EOQ
@@ -215,7 +215,7 @@ CREATE TABLE IF NOT EXISTS `$FOF_ITEM_TAG_TABLE` (
   `item_id` int(11) NOT NULL default '0',
   `tag_id` int(11) NOT NULL default '0',
   PRIMARY KEY  (`user_id`,`item_id`,`tag_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM;
 EOQ;
 
 $tables[] = <<<EOQ
@@ -224,7 +224,7 @@ CREATE TABLE IF NOT EXISTS `$FOF_SUBSCRIPTION_TABLE` (
   `user_id` int(11) NOT NULL default '0',
   `subscription_prefs` text,
   PRIMARY KEY  (`feed_id`,`user_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM;
 EOQ;
 
 $tables[] = <<<EOQ
@@ -233,7 +233,7 @@ CREATE TABLE IF NOT EXISTS `$FOF_TAG_TABLE` (
   `tag_name` char(100) NOT NULL default '',
   PRIMARY KEY  (`tag_id`),
   UNIQUE KEY (`tag_name`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM;
 EOQ;
 
 $tables[] = <<<EOQ
@@ -244,7 +244,7 @@ CREATE TABLE IF NOT EXISTS `$FOF_USER_TABLE` (
   `user_level` enum('user','admin') NOT NULL default 'user',
   `user_prefs` text,
   PRIMARY KEY  (`user_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM;
 EOQ;
 
 foreach($tables as $table)
