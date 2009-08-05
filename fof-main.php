@@ -632,7 +632,9 @@ function fof_subscribe($user_id, $url, $unread="today")
     {
         $url = html_entity_decode($rss->subscribe_url(), ENT_QUOTES);
         $self = $rss->get_link(0, 'self');
-        if($self) $url = html_entity_decode($self, ENT_QUOTES);
+        // Плохая, б**дь, идея, заменять урл на "тот, что сказал сам фид"
+        // Причина: 1) кривые фиды 2) фиды с авторизацией
+        //if($self) $url = html_entity_decode($self, ENT_QUOTES);
 
         if(fof_feed_exists($url))
         {
@@ -756,7 +758,9 @@ function fof_update_feed($id)
         
     $sub = html_entity_decode($rss->subscribe_url(), ENT_QUOTES);
     $self_link = $rss->get_link(0, 'self');
-    if($self_link) $sub = html_entity_decode($self_link, ENT_QUOTES);
+    // Плохая, б**дь, идея, заменять урл на "тот, что сказал сам фид"
+    // Причина: 1) кривые фиды 2) фиды с авторизацией
+    //if($self_link) $sub = html_entity_decode($self_link, ENT_QUOTES);
     
     fof_log("subscription url is $sub");
     

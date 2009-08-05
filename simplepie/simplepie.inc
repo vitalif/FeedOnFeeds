@@ -446,7 +446,7 @@ class SimplePie
 	 * @see SimplePie::set_timeout()
 	 * @access private
 	 */
-	var $timeout = 10;
+	var $timeout = 60;
 
 	/**
 	 * @var bool Forces fsockopen() to be used for remote files instead
@@ -7678,6 +7678,10 @@ class SimplePie_File
 				}
 				// added by FoF (vitalif@yourcmc.ru) to enable environment proxy settings support
 				// fucking cURL doesn't support this by default
+				if (preg_match('#^([a-z0-9_]+://)(?:([^/]*:[^/]*)@)([^/@]+([/\?].*)?$)#is', $url, $m))
+				{
+					$headers2[] = "Authorization: Basic ".base64_encode(urldecode($m[2]));
+				}
 				if ($proxy = getenv("http_proxy"))
 				{
 					$useproxy = true;
@@ -7686,7 +7690,7 @@ class SimplePie_File
 						foreach ($noproxy as $n)
 						{
 							if (preg_match('#(\d+)\.(\d+)\.(\d+)\.(\d+)/(\d+)#s', $n, $m) &&
-								preg_match('#^[a-z0-9_]+://([^/]+)#is', $url, $ip))
+								preg_match('#^[a-z0-9_]+://(?:[^/]*:[^/]*@)?([^/@]+)(?:/|$|\?)#is', $url, $ip))
 							{
 								$mask = array(
 									max(0x100 - (1 << max( 8-$m[5], 0)), 0),
@@ -7723,6 +7727,10 @@ class SimplePie_File
 						$proxy = preg_replace('#^http://#is', '', $proxy);
 						$proxy = preg_replace('#/*$#is', '', $proxy);
 						curl_setopt($fp, CURLOPT_PROXY, $proxy);
+					}
+					else
+					{
+						curl_setopt($fp, CURLOPT_PROXY, '');
 					}
 				}
 				curl_setopt($fp, CURLOPT_URL, $url);
