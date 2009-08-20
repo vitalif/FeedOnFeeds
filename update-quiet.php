@@ -12,7 +12,7 @@
  *
  */
 
-set_time_limit(60*10);
+set_time_limit(60*100);
 
 ob_start();
 
