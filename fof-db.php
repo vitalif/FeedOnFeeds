@@ -253,11 +253,10 @@ function fof_db_delete_subscription($user_id, $feed_id)
         $items[] = $r['item_id'];
     }
     
-    $itemclause = join(", ", $items);
-
     fof_safe_query("delete from $FOF_SUBSCRIPTION_TABLE where feed_id = %d and user_id = %d", $feed_id, $user_id);
 
-    fof_safe_query("delete from $FOF_ITEM_TAG_TABLE where user_id = %d and item_id in ($itemclause)", $user_id);
+    if (count($items))
+        fof_safe_query("delete from $FOF_ITEM_TAG_TABLE where user_id = %d and item_id in (".join(", ", $items).")", $user_id);
 }
 
 function fof_db_delete_feed($feed_id)
