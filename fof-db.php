@@ -263,8 +263,8 @@ function fof_db_delete_feed($feed_id)
 {
     global $FOF_FEED_TABLE, $FOF_ITEM_TABLE;
     
-    fof_safe_query("delete from $FOF_FEED_TABLE where feed_id = %d", $feed_id);
     fof_safe_query("delete from $FOF_ITEM_TABLE where feed_id = %d", $feed_id);
+    fof_safe_query("delete from $FOF_FEED_TABLE where feed_id = %d", $feed_id);
 }
 
 
