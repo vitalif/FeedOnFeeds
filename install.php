@@ -187,8 +187,28 @@ CREATE TABLE IF NOT EXISTS `$FOF_FEED_TABLE` (
   `feed_cache_date` int(11) default '0',
   `feed_cache_attempt_date` int(11) default '0',
   `feed_cache` text,
-  PRIMARY KEY  (`feed_id`)
-) ENGINE=MyISAM;
+  PRIMARY KEY (`feed_id`)
+) ENGINE=InnoDB;
+EOQ;
+
+$tables[] = <<<EOQ
+CREATE TABLE IF NOT EXISTS `$FOF_TAG_TABLE` (
+  `tag_id` int(11) NOT NULL auto_increment,
+  `tag_name` char(100) NOT NULL default '',
+  PRIMARY KEY (`tag_id`),
+  UNIQUE KEY (`tag_name`)
+) ENGINE=InnoDB;
+EOQ;
+
+$tables[] = <<<EOQ
+CREATE TABLE IF NOT EXISTS `$FOF_USER_TABLE` (
+  `user_id` int(11) NOT NULL auto_increment,
+  `user_name` varchar(100) NOT NULL default '',
+  `user_password_hash` varchar(32) NOT NULL default '',
+  `user_level` enum('user','admin') NOT NULL default 'user',
+  `user_prefs` text,
+  PRIMARY KEY (`user_id`)
+) ENGINE=InnoDB;
 EOQ;
 
 $tables[] = <<<EOQ
@@ -205,8 +225,9 @@ CREATE TABLE IF NOT EXISTS `$FOF_ITEM_TABLE` (
   PRIMARY KEY  (`item_id`),
   KEY `feed_id` (`feed_id`),
   KEY `item_guid` (`item_guid`(255)),
-  KEY `feed_id_item_cached` (`feed_id`,`item_cached`)
-) ENGINE=MyISAM;
+  KEY `feed_id_item_cached` (`feed_id`,`item_cached`),
+  FOREIGN KEY (`feed_id`) REFERENCES `$FOF_FEED_TABLE` (`feed_id`) ON UPDATE CASCADE
+) ENGINE=InnoDB;
 EOQ;
 
 $tables[] = <<<EOQ
@@ -214,8 +235,11 @@ CREATE TABLE IF NOT EXISTS `$FOF_ITEM_TAG_TABLE` (
   `user_id` int(11) NOT NULL default '0',
   `item_id` int(11) NOT NULL default '0',
   `tag_id` int(11) NOT NULL default '0',
-  PRIMARY KEY  (`user_id`,`item_id`,`tag_id`)
-) ENGINE=MyISAM;
+  PRIMARY KEY (`user_id`,`item_id`,`tag_id`),
+  FOREIGN KEY (`tag_id`) REFERENCES `$FOF_TAG_TABLE` (`tag_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (`user_id`) REFERENCES `$FOF_USER_TABLE` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (`item_id`) REFERENCES `$FOF_ITEM_TABLE` (`item_id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
 EOQ;
 
 $tables[] = <<<EOQ
@@ -223,29 +247,12 @@ CREATE TABLE IF NOT EXISTS `$FOF_SUBSCRIPTION_TABLE` (
   `feed_id` int(11) NOT NULL default '0',
   `user_id` int(11) NOT NULL default '0',
   `subscription_prefs` text,
-  PRIMARY KEY  (`feed_id`,`user_id`)
-) ENGINE=MyISAM;
+  PRIMARY KEY (`feed_id`,`user_id`),
+  FOREIGN KEY (`user_id`) REFERENCES `$FOF_USER_TABLE` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (`feed_id`) REFERENCES `$FOF_FEED_TABLE` (`feed_id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
 EOQ;
 
-$tables[] = <<<EOQ
-CREATE TABLE IF NOT EXISTS `$FOF_TAG_TABLE` (
-  `tag_id` int(11) NOT NULL auto_increment,
-  `tag_name` char(100) NOT NULL default '',
-  PRIMARY KEY  (`tag_id`),
-  UNIQUE KEY (`tag_name`)
-) ENGINE=MyISAM;
-EOQ;
-
-$tables[] = <<<EOQ
-CREATE TABLE IF NOT EXISTS `$FOF_USER_TABLE` (
-  `user_id` int(11) NOT NULL auto_increment,
-  `user_name` varchar(100) NOT NULL default '',
-  `user_password_hash` varchar(32) NOT NULL default '',
-  `user_level` enum('user','admin') NOT NULL default 'user',
-  `user_prefs` text,
-  PRIMARY KEY  (`user_id`)
-) ENGINE=MyISAM;
-EOQ;
 
 foreach($tables as $table)
 {
