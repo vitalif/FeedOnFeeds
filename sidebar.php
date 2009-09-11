@@ -269,7 +269,7 @@ foreach($feeds as $row)
    print "<td>";
    print "<a href=\"".($unread ? $u : $u2)."\" title=\"".($unread ? "unread" : "all")." items\"><b>$title</b></a>";
    if ($link)
-       print " <a href=\"$link\" title=\"home page\"><img src='image/external.png' /></a>";
+       print " <a href=\"$link\" title=\"home page\"><img style='border-width: 0px' src='image/external.png' /></a>";
    print "</td>";
    print "<td><nobr>";
 
