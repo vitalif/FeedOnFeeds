@@ -255,22 +255,24 @@ foreach($feeds as $row)
 
    print "</td>";
 
-	print "<td align='center'>";
-	if($row['feed_image'] && $fof_prefs_obj->get('favicons'))
-	{
-	   print "<a href=\"$url\" title=\"feed\"><img src='" . $row['feed_image'] . "' width='16' height='16' border='0' /></a>";
-	}
-	else
-	{
-	   print "<a href=\"$url\" title=\"feed\"><img src='image/feed-icon.png' width='16' height='16' border='0' /></a>";
-	}
-	print "</td>";
+   print "<td align='center'>";
+   if($row['feed_image'] && $fof_prefs_obj->get('favicons'))
+   {
+      print "<a href=\"$url\" title=\"feed\"><img src='" . $row['feed_image'] . "' width='16' height='16' border='0' /></a>";
+   }
+   else
+   {
+      print "<a href=\"$url\" title=\"feed\"><img src='image/feed-icon.png' width='16' height='16' border='0' /></a>";
+   }
+   print "</td>";
 
    print "<td>";
-   print "<a href=\"$link\" title=\"home page\"><b>$title</b></a></td>";
-
+   print "<a href=\"".($unread ? $u : $u2)."\" title=\"".($unread ? "unread" : "all")." items\"><b>$title</b></a>";
+   if ($link)
+       print " <a href=\"$link\" title=\"home page\"><img src='image/external.png' /></a>";
+   print "</td>";
    print "<td><nobr>";
-   
+
    print "<a href=\"update.php?feed=$id\" title=\"update\">u</a>";
    $stitle = htmlspecialchars(addslashes($title));
    print " <a href=\"#\" title=\"mark all read\" onclick=\"if(confirm('Mark all [$stitle] items as read --are you SURE?')) { mark_feed_read($id); return false; }  else { return false; }\">m</a>";
