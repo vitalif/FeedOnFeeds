@@ -349,7 +349,7 @@ function fof_db_get_items($user_id=1, $feed=NULL, $what="unread", $when=NULL, $s
     
     if($what != "all")
     {
-        $tags = split(" ", $what);
+        $tags = preg_split("/[\s,]*,[\s,]*/", $what);
         $in = implode(", ", array_fill(0, count($tags), "'%s'"));
         $from .= ", $FOF_TAG_TABLE t, $FOF_ITEM_TAG_TABLE it ";
         $where .= sprintf("AND it.user_id = %d ", $user_id);
@@ -439,47 +439,68 @@ function fof_db_get_item($user_id, $item_id)
 
 function fof_db_get_subscription_to_tags()
 {
-    $r = array();
+    $r = array('filter' => array());
     global $FOF_SUBSCRIPTION_TABLE;
     $result = fof_safe_query("select * from $FOF_SUBSCRIPTION_TABLE");
     while($row = fof_db_get_row($result))
     {
         $prefs = unserialize($row['subscription_prefs']);
         $tags = $prefs['tags'];
-        if(!is_array($r[$row['feed_id']])) $r[$row['feed_id']] = array();
+        if(!is_array($r[$row['feed_id']]))
+            $r[$row['feed_id']] = array();
         $r[$row['feed_id']][$row['user_id']] = $tags;
+        if ($prefs['filter'])
+        {
+            if(!is_array($r['filter'][$row['feed_id']]))
+                $r['filter'][$row['feed_id']] = array();
+            $r['filter'][$row['feed_id']][$row['user_id']] = $prefs['filter'];
+        }
     }
     
     return $r;    
 }
 
-function fof_db_tag_feed($user_id, $feed_id, $tag_id)
+function fof_db_get_subscription_prefs($user_id, $feed_id)
 {
     global $FOF_SUBSCRIPTION_TABLE;
-    
     $result = fof_safe_query("select subscription_prefs from $FOF_SUBSCRIPTION_TABLE where feed_id = %d and user_id = %d", $feed_id, $user_id);
     $row = fof_db_get_row($result);
     $prefs = unserialize($row['subscription_prefs']);
+    return $prefs;
+}
     
+function fof_db_set_subscription_prefs($user_id, $feed_id, $prefs)
+{
+    global $FOF_SUBSCRIPTION_TABLE;
+    return fof_safe_query("update $FOF_SUBSCRIPTION_TABLE set subscription_prefs = '%s' where feed_id = %d and user_id = %d", serialize($prefs), $feed_id, $user_id);
+}
+
+function fof_db_tag_feed($user_id, $feed_id, $tag_id)
+{
+    $prefs = fof_db_get_subscription_prefs($user_id, $feed_id);
     if(!is_array($prefs['tags']) || !in_array($tag_id, $prefs['tags'])) $prefs['tags'][] = $tag_id;
+    fof_db_set_subscription_prefs($user_id, $feed_id, $prefs);
+}
     
-    fof_safe_query("update $FOF_SUBSCRIPTION_TABLE set subscription_prefs = '%s' where feed_id = %d and user_id = %d", serialize($prefs), $feed_id, $user_id);
+function fof_db_set_feed_filter($user_id, $feed_id, $filter)
+{
+    $chg = false;
+    $prefs = fof_db_get_subscription_prefs($user_id, $feed_id);
+    if ($prefs['filter'] != $filter)
+    {
+        $prefs['filter'] = $filter;
+        $chg = true;
+    }
+    fof_db_set_subscription_prefs($user_id, $feed_id, $prefs);
+    return $chg;
 }
 
 function fof_db_untag_feed($user_id, $feed_id, $tag_id)
 {
-    global $FOF_SUBSCRIPTION_TABLE;
-    
-    $result = fof_safe_query("select subscription_prefs from $FOF_SUBSCRIPTION_TABLE where feed_id = %d and user_id = %d", $feed_id, $user_id);
-    $row = fof_db_get_row($result);
-    $prefs = unserialize($row['subscription_prefs']);
-    
+    $prefs = fof_db_get_subscription_prefs($user_id, $feed_id);
     if(is_array($prefs['tags']))
-    {
         $prefs['tags'] = array_diff($prefs['tags'], array($tag_id));
-    }
-    
-    fof_safe_query("update $FOF_SUBSCRIPTION_TABLE set subscription_prefs = '%s' where feed_id = %d and user_id = %d", serialize($prefs), $feed_id, $user_id);
+    fof_db_set_subscription_prefs($user_id, $feed_id, $prefs);
 }
 
 function fof_db_get_item_tags($user_id, $item_id)

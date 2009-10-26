@@ -708,7 +708,7 @@ class SimplePie
 	 * @see SimplePie::strip_htmltags()
 	 * @access private
 	 */
-	var $strip_htmltags = array('base', 'blink', 'body', 'doctype', 'embed', 'font', 'form', 'frame', 'frameset', 'html', 'iframe', 'input', 'marquee', 'meta', 'noscript', 'object', 'param', 'script', 'style');
+	var $strip_htmltags = array('base', 'blink', 'body', 'doctype', 'font', 'form', 'frame', 'frameset', 'html', 'input', 'marquee', 'meta', 'noscript', 'script', 'style');
 
 	/**
 	 * The SimplePie class contains feed level data and options
@@ -1662,6 +1662,12 @@ class SimplePie
 					$locate =& new $this->locator_class($file, $this->timeout, $this->useragent, $this->file_class, $this->max_checked_feeds, $this->content_type_sniffer_class);
 					if (!$locate->is_feed($file))
 					{
+						if ($file->status_code == 401)
+						{
+							$this->error = "HTTP 401 Unauthorized. Retry with correct login/password";
+							SimplePie_Misc::error($this->error, E_USER_NOTICE, __FILE__, __LINE__);
+							return false;
+						}
 						// We need to unset this so that if SimplePie::set_file() has been called that object is untouched
 						unset($file);
 						if ($file = $locate->find($this->autodiscovery, $this->all_discovered_feeds))
@@ -14715,7 +14721,7 @@ class SimplePie_Sanitize
 	// Options
 	var $remove_div = true;
 	var $image_handler = '';
-	var $strip_htmltags = array('base', 'blink', 'body', 'doctype', 'embed', 'font', 'form', 'frame', 'frameset', 'html', 'iframe', 'input', 'marquee', 'meta', 'noscript', 'object', 'param', 'script', 'style');
+	var $strip_htmltags = array('base', 'blink', 'body', 'doctype', 'font', 'form', 'frame', 'frameset', 'html', 'input', 'marquee', 'meta', 'noscript', 'script', 'style');
 	var $encode_instead_of_strip = false;
 	var $strip_attributes = array('bgsound', 'class', 'expr', 'id', 'style', 'onclick', 'onerror', 'onfinish', 'onmouseover', 'onmouseout', 'onfocus', 'onblur', 'lowsrc', 'dynsrc');
 	var $strip_comments = false;
@@ -14804,7 +14810,7 @@ class SimplePie_Sanitize
 		}
 	}
 
-	function strip_htmltags($tags = array('base', 'blink', 'body', 'doctype', 'embed', 'font', 'form', 'frame', 'frameset', 'html', 'iframe', 'input', 'marquee', 'meta', 'noscript', 'object', 'param', 'script', 'style'))
+	function strip_htmltags($tags = array('base', 'blink', 'body', 'doctype', 'font', 'form', 'frame', 'frameset', 'html', 'input', 'marquee', 'meta', 'noscript', 'script', 'style'))
 	{
 		if ($tags)
 		{

@@ -18,7 +18,7 @@ $tags = $_GET['tag'];
 $item = $_GET['item'];
 $remove = $_GET['remove'];
 
-foreach(explode(" ", $tags) as $tag)
+foreach(preg_split("/[\s,]*,[\s,]*/", $tags) as $tag)
 {
     if($remove == 'true')
     {

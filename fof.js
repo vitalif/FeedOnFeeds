@@ -882,7 +882,8 @@ function continueadd()
             method: 'get',
             parameters: parameters,
             insertion: Insertion.Bottom,
-            onComplete: continueadd
+            onComplete: continueadd,
+            evalScripts: true,
         });
     }
     else

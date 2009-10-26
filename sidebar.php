@@ -132,7 +132,7 @@ foreach($tags as $tag)
    }
 
    print "<td>";
-   if($unread) print "<a class='unread' href='.?what=$tag_name+unread'>$unread</a>/";
+   if($unread) print "<a class='unread' href='.?what=$tag_name,unread'>$unread</a>/";
    print "<a href='.?what=$tag_name'>$count</a></td>";
    print "<td><b><a href='.?what=$tag_name'>$tag_name</a></b></td>";
    print "<td><a href=\"#\" title=\"untag all items\" onclick=\"if(confirm('Untag all [$tag_name] items --are you SURE?')) { delete_tag('$tag_name'); return false; }  else { return false; }\">[x]</a></td>";
