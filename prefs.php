@@ -197,7 +197,7 @@ Share
 <option value=no>no</option>
 <option value=all <?php if($prefs->get('sharing') == "all") echo "selected";?>>all</option>
 <option value=shared <?php if($prefs->get('sharing') == "shared") echo "selected";?>>tagged as "shared"</option>
-<option value=star <?php if($prefs->get('sharing') == "star") echo "selected";?>>starred items</option>
+<option value=star <?php if($prefs->get('sharing') == "star") echo "selected";?>>starred</option>
 </select>
 items.
 <?php if($prefs->get('sharing') != "no") echo " <small><i>(your shared page is <a href='./shared.php?user=$fof_user_id'>here</a>)</i></small>";?><br><br>
