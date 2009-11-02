@@ -83,7 +83,7 @@ echo '<?xml version="1.0"?>';
 foreach($result as $item)
 {
     $feed_link = htmlspecialchars($item['feed_link']);
-    $feed_url = htmlspecialchars($item['feed_url']);
+    $feed_url = htmlspecialchars(preg_replace('!^([a-z0-9_]+)://[^/]*:[^/]*@!is', '\1://', $item['feed_url']));
 	$feed_title = htmlspecialchars($item['feed_title']);
 
 	$item_link = htmlspecialchars($item['item_link']);
