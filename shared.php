@@ -28,11 +28,11 @@ if($sharing == "no") die;
 $name = $prefs->get("sharedname");
 $url = $prefs->get("sharedurl");
 
-$which = ($sharing == "all") ? "all" : "shared";
+$which = $sharing;
 
 if(isset($_GET['which']))
 {
-    $which = ($sharing == "all") ? $_GET['which'] : "shared " . $_GET['which'];
+    $which = ($sharing == "all") ? $_GET['which'] : "$sharing " . $_GET['which'];
     $extratitle = " items tagged " . $_GET['which'];
 }
 
