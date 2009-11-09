@@ -214,21 +214,17 @@ URL to be linked on shared page: <input type=string name=sharedurl value="<?php 
 <?php
     $plugins = array();
     $dirlist = opendir(FOF_DIR . "/plugins");
-    while($file=readdir($dirlist))
+    while($file = readdir($dirlist))
     {
         fof_log("considering " . $file);
-        if(ereg('\.php$',$file))
-        {
-           $plugins[] = substr($file, 0, -4);
-        }
+        if(ereg('\.php$',$file) && is_readable(FOF_DIR . "/plugins/" . $file))
+            $plugins[] = substr($file, 0, -4);
     }
-
     closedir();
-
 ?>
 
 <?php foreach($plugins as $plugin) { ?>
-<input type=checkbox name=<?php echo $plugin ?> <?php if(!$prefs->get("plugin_" . $plugin)) echo "checked"; ?>> Enable plugin <tt><?php echo $plugin?></tt>?<br>
+<input type=checkbox name="<?php echo $plugin ?>" <?php if(!$prefs->get("plugin_" . $plugin)) echo "checked"; ?>> Enable plugin <tt><?php echo $plugin?></tt>?<br>
 <?php } ?>
 
 <br>
@@ -243,8 +239,6 @@ URL to be linked on shared page: <input type=string name=sharedurl value="<?php 
 <br>
 <input type="submit" name="plugins" value="Save Plugin Preferences">
 </form>
-
-
 
 <br><h1>Feed on Feeds - Feeds, Tags and Filters</h1>
 <div style="border: 1px solid black; margin: 10px; padding: 10px; font-size: 12px; font-family: verdana, arial;">
@@ -307,7 +301,6 @@ foreach($feeds as $row)
 <input type="submit" value="Update tags and filters">
 </form>
 </div>
-
 
 <?php if(fof_is_admin()) { ?>
 

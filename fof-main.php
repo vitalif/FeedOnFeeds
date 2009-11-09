@@ -1027,14 +1027,15 @@ function fof_init_plugins()
     $p =& FoF_Prefs::instance();
 
     $dirlist = opendir(FOF_DIR . "/plugins");
-    while($file=readdir($dirlist))
+    while ($file = readdir($dirlist))
     {
         fof_log("considering " . $file);
-        if(ereg('\.php$',$file) && !$p->get('plugin_' . substr($file, 0, -4)))
+        if (ereg('\.php$',$file) &&
+            is_readable(FOF_DIR . "/plugins/" . $file) &&
+            !$p->get('plugin_' . substr($file, 0, -4)))
         {
-                fof_log("including " . $file);
-
-                include(FOF_DIR . "/plugins/" . $file);
+            fof_log("including " . $file);
+            include(FOF_DIR . "/plugins/" . $file);
         }
     }
 
