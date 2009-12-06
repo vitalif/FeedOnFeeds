@@ -32,7 +32,7 @@ $which = $sharing;
 
 if(isset($_GET['which']))
 {
-    $which = ($sharing == "all") ? $_GET['which'] : "$sharing " . $_GET['which'];
+    $which = ($sharing == "all") ? $_GET['which'] : "$sharing, " . $_GET['which'];
     $extratitle = " items tagged " . $_GET['which'];
 }
 
@@ -84,26 +84,26 @@ foreach($result as $item)
 {
     $feed_link = htmlspecialchars($item['feed_link']);
     $feed_url = htmlspecialchars(preg_replace('!^([a-z0-9_]+)://[^/]*:[^/]*@!is', '\1://', $item['feed_url']));
-	$feed_title = htmlspecialchars($item['feed_title']);
+    $feed_title = htmlspecialchars($item['feed_title']);
 
-	$item_link = htmlspecialchars($item['item_link']);
-    
+    $item_link = htmlspecialchars($item['item_link']);
+
     $item_guid = $item['item_guid'];
     if(!ereg("^[a-z0-9\.\+\-]+:", $item_guid))
     {
         $item_guid = $feed_link . '#' . $item_guid;
     }
     $item_guid = htmlspecialchars($item_guid);
-    
-	$item_title = htmlspecialchars($item['item_title']);
-	$item_content = htmlspecialchars($item['item_content']);
 
-	$item_published = gmdate('Y-m-d\TH:i:s\Z', $item['item_published']);
-	$item_cached = gmdate('Y-m-d\TH:i:s\Z', $item['item_cached']);
-	$item_updated = gmdate('Y-m-d\TH:i:s\Z', $item['item_updated']);
+    $item_title = htmlspecialchars($item['item_title']);
+    $item_content = htmlspecialchars($item['item_content']);
 
-	if(!$item_title) $item_title = "[no title]";
-	
+    $item_published = gmdate('Y-m-d\TH:i:s\Z', $item['item_published']);
+    $item_cached = gmdate('Y-m-d\TH:i:s\Z', $item['item_cached']);
+    $item_updated = gmdate('Y-m-d\TH:i:s\Z', $item['item_updated']);
+
+    if(!$item_title) $item_title = "[no title]";
+
 ?>
 
   <entry>
@@ -118,7 +118,7 @@ foreach($result as $item)
       <link href="<?php echo $feed_url ?>" rel="self" type="application/atom+xml"/>
       <title><?php echo $feed_title ?></title>
     </source>
-  </entry>    
+  </entry>
 <?php
 }
 echo '</feed>';
@@ -148,7 +148,7 @@ header("Content-Type: text/html; charset=utf-8");
       </style>
 
    </head>
-      
+
   <body>
 
   <h1 class="box"><a href="http://feedonfeeds.com/">Feed on Feeds</a> - Shared Items
@@ -166,26 +166,26 @@ $first = true;
 
 foreach($result as $item)
 {
-	$item_id = $item['item_id'];
-	print '<div class="item shown" id="i' . $item_id . '">';
-    
+    $item_id = $item['item_id'];
+    print '<div class="item shown" id="i' . $item_id . '">';
+
     $feed_link = $item['feed_link'];
-	$feed_title = $item['feed_title'];
-	$feed_image = $item['feed_image'];
-	$feed_description = $item['feed_description'];
+    $feed_title = $item['feed_title'];
+    $feed_image = $item['feed_image'];
+    $feed_description = $item['feed_description'];
 
-	$item_link = $item['item_link'];
-	$item_id = $item['item_id'];
-	$item_title = $item['item_title'];
-	$item_content = $item['item_content'];
-	$item_read = $item['item_read'];
+    $item_link = $item['item_link'];
+    $item_id = $item['item_id'];
+    $item_title = $item['item_title'];
+    $item_content = $item['item_content'];
+    $item_read = $item['item_read'];
 
-	$item_published = gmdate("Y-n-d g:ia", $item['item_published'] + $offset*60*60);
-	$item_cached = gmdate("Y-n-d g:ia", $item['item_cached'] + $offset*60*60);
-	$item_updated = gmdate("Y-n-d g:ia", $item['item_updated'] + $offset*60*60);
+    $item_published = gmdate("Y-n-d g:ia", $item['item_published'] + $offset*60*60);
+    $item_cached = gmdate("Y-n-d g:ia", $item['item_cached'] + $offset*60*60);
+    $item_updated = gmdate("Y-n-d g:ia", $item['item_updated'] + $offset*60*60);
 
-	if(!$item_title) $item_title = "[no title]";
-	
+    if(!$item_title) $item_title = "[no title]";
+
 ?>
 
 <div class="header">
@@ -193,12 +193,12 @@ foreach($result as $item)
     <h1>
         <a href="<?php echo $item_link ?>">
             <?php echo $item_title ?>
-		</a>
-	</h1>
-	
-    
+        </a>
+    </h1>
+
+
     <span class='dash'> - </span>
-    
+
     <h2>
 
     <a href="<?php echo $feed_link ?>" title='<?php echo $feed_description ?>'><img src="<?php echo $feed_image ?>" height="16" width="16" border="0" /></a>
@@ -206,7 +206,7 @@ foreach($result as $item)
 
     </h2>
 
-	<span class="meta">on <?php echo $item_published ?> GMT</span>
+    <span class="meta">on <?php echo $item_published ?> GMT</span>
 
 </div>
 
@@ -221,7 +221,7 @@ foreach($result as $item)
 
 if(count($result) == 0)
 {
-	echo "<p><i>No shared items.</i></p>";
+    echo "<p><i>No shared items.</i></p>";
 }
 
 ?>
