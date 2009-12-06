@@ -17,5 +17,12 @@ include_once("fof-main.php");
 $url = $_REQUEST['url'];
 $unread = $_REQUEST['unread'];
 
-print(fof_subscribe(fof_current_user(), $url, $unread));
+$error = fof_subscribe(fof_current_user(), $url, $unread);
+if (preg_match('/HTTP 401/', $error))
+    print "<script>
+document.addform.basic_login.style.backgroundColor='#FFC0C0';
+document.addform.basic_password.style.backgroundColor='#FFC0C0';
+document.addform.basic_password.focus();
+</script>";
+print $error;
 ?>

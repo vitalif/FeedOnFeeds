@@ -164,6 +164,15 @@ function fof_db_get_feeds()
     return(fof_db_query("select * from $FOF_FEED_TABLE order by feed_title"));
 }
 
+function fof_db_get_item_by_id($item_id)
+{
+    global $FOF_ITEM_TABLE;
+    if (($result = fof_db_query("select * from $FOF_ITEM_TABLE where item_id=".intval($item_id))) &&
+        ($row = fof_db_get_row($result)))
+        return $row;
+    return NULL;
+}
+
 function fof_db_get_item_count($user_id)
 {
     global $FOF_FEED_TABLE, $FOF_ITEM_TABLE, $FOF_SUBSCRIPTION_TABLE, $FOF_ITEM_TAG_TABLE;
@@ -797,10 +806,8 @@ function fof_db_authenticate($user_name, $user_password_hash)
 
     $result = fof_safe_query("select * from $FOF_USER_TABLE where user_name = '%s' and user_password_hash = '%s'", $user_name, $user_password_hash);
 
-    if(mysql_num_rows($result) == 0)
-    {
+    if (mysql_num_rows($result) == 0)
         return false;
-    }
 
     $row = mysql_fetch_array($result);
 
@@ -809,6 +816,29 @@ function fof_db_authenticate($user_name, $user_password_hash)
     $fof_user_level = $row['user_level'];
 
     return true;
+}
+
+function fof_db_get_is_duplicate_item($item_id, $item_guid, $content_md5)
+{
+    global $FOF_ITEM_TABLE, $FOF_USER_TABLE, $FOF_FEED_TABLE, $FOF_SUBSCRIPTION_TABLE;
+    $result = fof_safe_query("select * from $FOF_ITEM_TABLE where item_guid='%s' AND item_id!='%d'", $item_guid, $item_id);
+    $dups = array();
+    while ($row = fof_db_get_row($result))
+        if (md5($row['item_content']) == $content_md5)
+            $dups[] = intval($row['item_id']);
+    if (!count($dups))
+        return array();
+    $result = fof_db_query(
+        "SELECT DISTINCT $FOF_SUBSCRIPTION_TABLE.user_id FROM $FOF_ITEM_TABLE, $FOF_SUBSCRIPTION_TABLE".
+        " WHERE item_id IN (".join(",",$dups).") AND $FOF_SUBSCRIPTION_TABLE.feed_id=$FOF_ITEM_TABLE.feed_id"
+    );
+    $users = array();
+    while ($row = mysql_fetch_row($result))
+    {
+        print "Duplicate! $row[0]\n";
+        $users[] = $row[0];
+    }
+    return $users;
 }
 
 ?>

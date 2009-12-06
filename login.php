@@ -27,10 +27,18 @@ if(isset($_POST["user_name"]) && isset($_POST["user_password"]))
         Header("Location: .");
         exit();
     }
-    else
+    elseif (!fof_db_get_user_id($_POST['user_name']) &&
+        fof_authenticate_external($_POST['user_name'], $_POST['user_password']))
     {
-    	$failed = true;
+        fof_db_add_user($_POST['user_name'], $_POST['user_password']);
+        if (fof_authenticate($_POST['user_name'], md5($_POST['user_password'] . $_POST['user_name'])))
+        {
+            fof_add_default_feeds_for_external($_POST['user_name'], $_POST['user_password']);
+            Header("Location: .");
+            exit();
+        }
     }
+    $failed = true;
 }
 
 ?>

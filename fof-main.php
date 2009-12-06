@@ -160,9 +160,9 @@ function fof_get_tags($user_id)
     while($row = fof_db_get_row($result))
     {
         if(isset($counts[$row['tag_id']]))
-                $row['unread'] = $counts[$row['tag_id']];
+            $row['unread'] = $counts[$row['tag_id']];
         else
-                $row['unread'] = 0;
+            $row['unread'] = 0;
 
         $tags[] = $row;
     }
@@ -378,15 +378,9 @@ function fof_get_feeds($user_id, $order = 'feed_title', $direction = 'asc')
     $result = fof_db_get_unread_item_count($user_id);
 
     while($row = fof_db_get_row($result))
-    {
         for($i=0; $i<count($feeds); $i++)
-        {
             if($feeds[$i]['feed_id'] == $row['id'])
-            {
                 $feeds[$i]['feed_unread'] = $row['count'];
-            }
-        }
-    }
 
     foreach($feeds as $feed)
     {
@@ -592,9 +586,7 @@ function fof_prepare_url($url)
     if(substr($url, 0, 7) == "feed://") $url = substr($url, 7);
 
     if(substr($url, 0, 7) != 'http://' && substr($url, 0, 8) != 'https://')
-    {
-     $url = 'http://' . $url;
-    }
+        $url = 'http://' . $url;
 
     return $url;
 }
@@ -637,17 +629,17 @@ function fof_subscribe($user_id, $url, $unread="today")
 
         if(fof_feed_exists($url))
         {
-                $feed = fof_db_get_feed_by_url($url);
+            $feed = fof_db_get_feed_by_url($url);
 
-                if(fof_is_subscribed($user_id, $url))
-                {
-                    return "You are already subscribed to " . fof_render_feed_link($feed) . "<br>";
-                }
+            if(fof_is_subscribed($user_id, $url))
+            {
+                return "You are already subscribed to " . fof_render_feed_link($feed) . "<br>";
+            }
 
-                fof_db_add_subscription($user_id, $feed['feed_id']);
-                if($unread != "no") fof_db_mark_feed_unread($user_id, $feed['feed_id'], $unread);
+            fof_db_add_subscription($user_id, $feed['feed_id']);
+            if($unread != "no") fof_db_mark_feed_unread($user_id, $feed['feed_id'], $unread);
 
-                return '<font color="green"><b>Subscribed.</b></font><!-- '.$feed['feed_id'].' --><br>';
+            return '<font color="green"><b>Subscribed.</b></font><!-- '.$feed['feed_id'].' --><br>';
         }
 
         $id = fof_add_feed($url, $rss->get_title(), $rss->get_link(), $rss->get_description() );
@@ -692,9 +684,10 @@ function fof_mark_item_unread($feed_id, $id, $filtered = array())
 {
     $result = fof_get_subscribed_users($feed_id);
 
+    $users = array();
     while($row = fof_db_get_row($result))
         if (!$filtered[$row['user_id']])
-                $users[] = $row['user_id'];
+            $users[] = $row['user_id'];
 
     fof_db_mark_item_unread($users, $id);
 }
@@ -715,35 +708,33 @@ function fof_parse($url)
     return $pie;
 }
 
-function fof_apply_tags($feed_id, $item_id, $link, $title, $content)
+function fof_apply_tags($item)
 {
     global $fof_subscription_to_tags;
 
     if(!isset($fof_subscription_to_tags))
-    {
         $fof_subscription_to_tags = fof_db_get_subscription_to_tags();
-    }
 
-    foreach((array)$fof_subscription_to_tags[$feed_id] as $user_id => $tags)
-    {
+    // add subscription tags
+    foreach((array)$fof_subscription_to_tags[$item['feed_id']] as $user_id => $tags)
         if(is_array($tags))
-        {
-                foreach($tags as $tag)
-                {
-                    fof_db_tag_items($user_id, $tag, $item_id);
-                }
-        }
-    }
-
-    // filter out some items
+            foreach($tags as $tag)
+                fof_db_tag_items($user_id, $tag, $item['item_id']);
 
     $filtered = array();
 
-    foreach((array)$fof_subscription_to_tags['filter'][$feed_id] as $user_id => $filter)
-        if ($filter && (preg_match($filter, $title) || preg_match($filter, $content)))
-                $filtered[$user_id] = true;
+    // filter duplicate items
+    $dup = fof_db_get_is_duplicate_item($item['item_id'], $item['item_guid'], md5($item['item_content']));
+    foreach ($dup as $user_id)
+        $filtered[$user_id] = true;
 
-    fof_mark_item_unread($feed_id, $item_id, $filtered);
+    // regexp filter items
+    foreach((array)$fof_subscription_to_tags['filter'][$item['feed_id']] as $user_id => $filter)
+        if ($filter && (preg_match($filter, $title) || preg_match($filter, $content)))
+            $filtered[$user_id] = true;
+
+    // mark item as unread for some users
+    fof_mark_item_unread($item['feed_id'], $item['item_id'], $filtered);
 }
 
 function fof_update_feed($id)
@@ -781,7 +772,7 @@ function fof_update_feed($id)
         $image_cache_date = time();
     }
 
-    $title =  $rss->get_title();
+    $title = $rss->get_title();
     if($title == "") $title = "[no title]";
 
     fof_db_feed_update_metadata($id, $sub, $title, $rss->get_link(), $rss->get_description(), $image, $image_cache_date );
@@ -793,108 +784,44 @@ function fof_update_feed($id)
     {
         $filter = @unserialize($feed['feed_filter']);
         if (!$filter || !$filter['re'] || !$filter['tags'])
-                $filter = NULL;
+            $filter = NULL;
         else
-                $filter['tags'] = preg_split('/[\s,]*,[\s,]*/', $filter['tags']);
+            $filter['tags'] = preg_split('/[\s,]*,[\s,]*/', $filter['tags']);
     }
 
     if($rss->get_items())
     {
         foreach($rss->get_items() as $item)
         {
-                $link = $item->get_permalink();
-                $title = $item->get_title();
-                $content = $item->get_content();
-                $date = $item->get_date('U');
-                if(!$date) $date = time();
-                $item_id = $item->get_id();
+            $link = $item->get_permalink();
+            $title = $item->get_title();
+            $content = $item->get_content();
+            $date = $item->get_date('U');
+            if(!$date) $date = time();
+            $item_id = $item->get_id();
 
-                if(!$item_id)
+            if(!$item_id)
+                $item_id = $link;
+
+            $id = fof_db_find_item($feed_id, $item_id);
+
+            if($id == NULL)
+            {
+                $n++;
+
+                global $fof_item_prefilters;
+                foreach($fof_item_prefilters as $filter)
                 {
-                    $item_id = $link;
+                    list($link, $title, $content) = $filter($item, $link, $title, $content);
                 }
 
-                $id = fof_db_find_item($feed_id, $item_id);
+                $id = fof_db_add_item($feed_id, $item_id, $link, $title, $content, time(), $date, $date);
+                $fof_item = fof_db_get_item_by_id($id);
+                fof_apply_tags($fof_item);
+                fof_apply_plugin_tags($feed_id, $id, NULL);
+            }
 
-                if($id == NULL)
-                {
-                    $n++;
-
-                    global $fof_item_prefilters;
-                    foreach($fof_item_prefilters as $filter)
-                    {
-                        list($link, $title, $content) = $filter($item, $link, $title, $content);
-                    }
-
-                    $id = fof_db_add_item($feed_id, $item_id, $link, $title, $content, time(), $date, $date);
-                    fof_apply_tags($feed_id, $id, $link, $title, $content);
-                    fof_apply_plugin_tags($feed_id, $id, NULL);
-
-                    // this was a failed attempt to avoid duplicates when subscribing to
-                    // a "planet" type feed when you already have some of the feeds in the
-                    // planet subscribed.  in the end there were just too many cases where
-                    // dupes still got through (like the 'source' feed url being just slightly
-                    // different from the subscribed url).
-                    //
-                    // maybe a better approach would be simply using the Atom GUID as a
-                    // true *GU* ID.
-
-                    /*
-                    $source = $item->get_item_tags(SIMPLEPIE_NAMESPACE_ATOM_10, 'source');
-                    $links = $source[0]['child'][SIMPLEPIE_NAMESPACE_ATOM_10]['link'];
-
-                    if(is_array($links))
-                    {
-                        foreach($links as $link)
-                        {
-                            if($link['attribs']['']['rel'] == 'self')
-                            {
-                                $feed_url = $link['attribs']['']['href'];
-
-                                $feed = fof_db_get_feed_by_url($feed_url);
-
-                                if($feed)
-                                {
-                                    fof_log("was repub from $feed_url");
-
-                                    $republished = true;
-
-                                    $result = fof_get_subscribed_users($feed_id);
-
-                                    $repub_subscribers = array();
-                                    while($row = fof_db_get_row($result))
-                                    {
-                                    $repub_subscribers[] = $row['user_id'];
-                                    fof_log("repub_sub: " . $row['user_id']);
-                                    }
-
-                                    $result = fof_get_subscribed_users($feed['feed_id']);
-
-                                    $original_subscribers = array();
-                                    while($row = fof_db_get_row($result))
-                                    {
-                                    $original_subscribers[] = $row['user_id'];
-                                    fof_log("orig_sub: " . $row['user_id']);
-                                    }
-
-                                    $new_subscribers = array_diff($repub_subscribers, $original_subscribers);
-
-                                    fof_db_mark_item_unread($new_subscribers, $id);
-
-                                    $old_subscribers = array_intersect($original_subscribers, $repub_subscribers);
-
-                                    foreach($old_subscribers as $user)
-                                    {
-                                        fof_tag_item($user, $id, 'republished');
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    */
-                }
-
-                $ids[] = $id;
+            $ids[] = $id;
         }
     }
 
@@ -913,30 +840,24 @@ function fof_update_feed($id)
 
         if(count($ids) != 0)
         {
-                $in = implode ( ", ", $ids );
+            $in = implode ( ", ", $ids );
 
-                global $FOF_ITEM_TABLE, $FOF_ITEM_TAG_TABLE;
-                $sql = "select item_id, item_cached from $FOF_ITEM_TABLE where feed_id = $feed_id and item_id not in ($in) order by item_cached desc limit $count, 1000000000";
-                $result = fof_db_query($sql);
+            global $FOF_ITEM_TABLE, $FOF_ITEM_TAG_TABLE;
+            $sql = "select item_id, item_cached from $FOF_ITEM_TABLE where feed_id = $feed_id and item_id not in ($in) order by item_cached desc limit $count, 1000000000";
+            $result = fof_db_query($sql);
 
-                while($row = fof_db_get_row($result))
-                {
-                    if($row['item_cached'] < (time() - ($admin_prefs['purge'] * 24 * 60 * 60)))
-                    {
-                        if(!fof_item_has_tags($row['item_id']))
-                        {
-                            $delete[] = $row['item_id'];
-                        }
-                    }
-                }
+            while($row = fof_db_get_row($result))
+                if($row['item_cached'] < (time() - ($admin_prefs['purge'] * 24 * 60 * 60)))
+                    if(!fof_item_has_tags($row['item_id']))
+                        $delete[] = $row['item_id'];
 
-                $ndelete = count($delete);
-                if(count($delete) != 0)
-                {
-                    $in = implode(", ", $delete);
-                    fof_db_query( "delete from $FOF_ITEM_TABLE where item_id in ($in)" );
-                    fof_db_query( "delete from $FOF_ITEM_TAG_TABLE where item_id in ($in)" );
-                }
+            $ndelete = count($delete);
+            if(count($delete) != 0)
+            {
+                $in = implode(", ", $delete);
+                fof_db_query( "delete from $FOF_ITEM_TABLE where item_id in ($in)" );
+                fof_db_query( "delete from $FOF_ITEM_TAG_TABLE where item_id in ($in)" );
+            }
         }
     }
 
@@ -959,32 +880,23 @@ function fof_apply_plugin_tags($feed_id, $item_id = NULL, $user_id = NULL)
     $users = array();
 
     if($user_id)
-    {
         $users[] = $user_id;
-    }
     else
     {
         $result = fof_get_subscribed_users($feed_id);
 
         while($row = fof_db_get_row($result))
-        {
-                $users[] = $row['user_id'];
-        }
+            $users[] = $row['user_id'];
     }
 
     $items = array();
     if($item_id)
-    {
         $items[] = fof_db_get_item($user_id, $item_id);
-    }
     else
     {
         $result = fof_db_get_items($user_id, $feed_id, $what="all", NULL, NULL);
-
         foreach($result as $r)
-        {
-                $items[] = $r;
-        }
+            $items[] = $r;
     }
 
     $userdata = fof_get_users();
@@ -996,16 +908,16 @@ function fof_apply_plugin_tags($feed_id, $item_id = NULL, $user_id = NULL)
         global $fof_tag_prefilters;
         foreach($fof_tag_prefilters as $plugin => $filter)
         {
-                fof_log("considering $plugin $filter");
+            fof_log("considering $plugin $filter");
 
-                if(!$userdata[$user]['prefs']['plugin_' . $plugin])
+            if(!$userdata[$user]['prefs']['plugin_' . $plugin])
+            {
+                foreach($items as $item)
                 {
-                    foreach($items as $item)
-                    {
-                        $tags = $filter($item['item_link'], $item['item_title'], $item['item_content']);
-                        fof_tag_item($user, $item['item_id'], $tags);
-                    }
+                    $tags = $filter($item['item_link'], $item['item_title'], $item['item_content']);
+                    fof_tag_item($user, $item['item_id'], $tags);
                 }
+            }
         }
     }
 }
