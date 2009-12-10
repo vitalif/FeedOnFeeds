@@ -47,8 +47,8 @@ if(isset($_GET['feed']))
 $result = fof_get_items($user, $feed, $which, NULL, 0, 100);
 
 
-$shared_feed = htmlspecialchars("http://" . $_SERVER['SERVER_NAME'] . $_SERVER['PHP_SELF'] . "?user=$user&format=atom");
-$shared_link = htmlspecialchars("http://" . $_SERVER['SERVER_NAME'] . $_SERVER['PHP_SELF'] . "?user=$user");
+$shared_feed = "http://" . $_SERVER['SERVER_NAME'] . $_SERVER['PHP_SELF'] . "?user=$user&format=atom";
+$shared_link = "http://" . $_SERVER['SERVER_NAME'] . $_SERVER['PHP_SELF'] . "?user=$user";
 
 if(isset($_GET['which']))
 {
@@ -74,9 +74,9 @@ echo '<?xml version="1.0"?>';
   <updated><?php echo gmdate('Y-m-d\TH:i:s\Z')?></updated>
   <generator uri="http://feedonfeeds.com/">Feed on Feeds</generator>
   <?php if($name) echo "<author><name>$name</name></author>"; ?>
-  <id><?php echo $shared_feed ?></id>
-  <link href="<?php echo $shared_feed ?>" rel="self" type="application/atom+xml"/>
-  <link href="<?php echo $shared_link ?>" rel="alternate"/>
+  <id><?= htmlspecialchars($shared_feed) ?></id>
+  <link href="<?= htmlspecialchars($shared_feed) ?>" rel="self" type="application/atom+xml"/>
+  <link href="<?= htmlspecialchars($shared_link) ?>" rel="alternate"/>
 
 <?php
 
