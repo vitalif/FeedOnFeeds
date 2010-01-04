@@ -1,0 +1,6 @@
+Options -Indexes
+<FilesMatch "fof\.log.*">
+    Order deny,allow
+    Allow from none
+    Deny from all
+</FilesMatch>
