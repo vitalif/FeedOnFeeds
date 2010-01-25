@@ -45,9 +45,9 @@ $feeds = fof_multi_sort($feeds, 'feed_cache_attempt_date', false);
 
 foreach($feeds as $feed)
 {
-	$id = $feed['feed_id'];
+    $id = $feed['feed_id'];
     fof_log("updating $feed[feed_url]", "update");
-	fof_update_feed($id);
+    fof_update_feed($id);
 }
 
 fof_log("optimizing database", "update");

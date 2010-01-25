@@ -839,10 +839,7 @@ function fof_db_get_is_duplicate_item($item_id, $item_guid, $content_md5)
     );
     $users = array();
     while ($row = mysql_fetch_row($result))
-    {
-        print "Duplicate! $row[0]\n";
         $users[] = $row[0];
-    }
     return $users;
 }
 

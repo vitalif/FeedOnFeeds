@@ -72,11 +72,11 @@ class FoF_Prefs
             );
         
         $admin_defaults = array(
-            "purge" => 30,
+            "purge" => '',
             "autotimeout" => 30,
             "manualtimeout" => 15,
-            "logging" => false,
-             );
+            "logging" => true,
+            );
         
         $this->stuff_array($this->prefs, $defaults);
         $this->stuff_array($this->admin_prefs, $admin_defaults);
