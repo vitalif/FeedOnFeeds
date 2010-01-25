@@ -23,19 +23,13 @@ fof_set_content_type();
 
 function get_curl_version()
 {
-        if (is_array($curl = curl_version()))
-        {
-                $curl = $curl['version'];
-        }
-        else if (preg_match('/curl\/(\S+)(\s|$)/', $curl, $match))
-        {
-                $curl = $match[1];
-        }
-        else
-        {
-                $curl = 0;
-        }
-        return $curl;
+    if (is_array($curl = curl_version()))
+        $curl = $curl['version'];
+    else if (preg_match('/curl\/(\S+)(\s|$)/', $curl, $match))
+        $curl = $match[1];
+    else
+        $curl = 0;
+    return $curl;
 }
 
 $php_ok = (function_exists('version_compare') && version_compare(phpversion(), '4.3.2', '>='));
@@ -52,54 +46,46 @@ $iconv_ok = extension_loaded('iconv');
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 
-<head><title>feed on feeds - installation</title>
-		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-		<link rel="stylesheet" href="fof.css" media="screen" />
-		<script src="fof.js" type="text/javascript"></script>
-		<meta name="ROBOTS" content="NOINDEX, NOFOLLOW" />
-        <style>
-        body
-        {
-            font-family: georgia;
-            font-size: 16px;
-        }
-        
-        div
-        {
-            background: #eee;
-            border: 1px solid black;
-            width: 75%;
-            margin: 5em auto;
-            padding: 1.5em;
-        }
-        
-        hr
-        {
-            height:0;
-            border:0;
-            border-top:1px solid #999;
-        }
-        
-        .fail { color: red; }
-        
-        .pass { color: green; }
+<head>
+    <title>feed on feeds - installation</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" href="fof.css" media="screen" />
+    <script src="fof.js" type="text/javascript"></script>
+    <meta name="ROBOTS" content="NOINDEX, NOFOLLOW" />
+    <style>
+    body
+    {
+        font-family: georgia;
+        font-size: 16px;
+    }
+    div
+    {
+        background: #eee;
+        border: 1px solid black;
+        width: 75%;
+        margin: 5em auto;
+        padding: 1.5em;
+    }
+    hr
+    {
+        height:0;
+        border:0;
+        border-top:1px solid #999;
+    }
+    .fail { color: red; }
+    .pass { color: green; }
+    .warn { color: #a60; }
+    </style>
+</head>
 
-        .warn { color: #a60; }
-        
-        </style>
-
-	</head>
-
-	<body><div>		<center style="font-size: 20px;"><a href="http://feedonfeeds.com/">Feed on Feeds</a> - Installation</center><br>
-
+<body><div><center style="font-size: 20px;"><a href="http://feedonfeeds.com/">Feed on Feeds</a> - Installation</center><br>
 
 <?php
 if($_GET['password'] && $_GET['password'] == $_GET['password2'] )
 {
-	$password_hash = md5($_GET['password'] . 'admin');
-	fof_safe_query("insert into $FOF_USER_TABLE (user_id, user_name, user_password_hash, user_level) values (1, 'admin', '%s', 'admin')", $password_hash);
-	
-	echo '<center><b>OK!  Setup complete! <a href=".">Login as admin</a>, and start subscribing!</center></b></div></body></html>';
+    $password_hash = md5($_GET['password'] . 'admin');
+    fof_safe_query("insert into $FOF_USER_TABLE (user_id, user_name, user_password_hash, user_level) values (1, 'admin', '%s', 'admin')", $password_hash);
+    echo '<center><b>OK!  Setup complete! <a href=".">Login as admin</a>, and start subscribing!</center></b></div></body></html>';
 }
 else
 {
@@ -107,7 +93,6 @@ else
     {
         echo '<center><font color="red">Passwords do not match!</font></center><br><br>';
     }
-
 ?>
 
 Checking compatibility...
@@ -253,103 +238,67 @@ CREATE TABLE IF NOT EXISTS `$FOF_SUBSCRIPTION_TABLE` (
 ) ENGINE=InnoDB;
 EOQ;
 
-
 foreach($tables as $table)
-{
-	if(!fof_db_query($table, 1))
-	{
-		exit ("Can't create table.  MySQL says: <b>" . mysql_error() . "</b><br>" );
-	}
-}
+    if(!fof_db_query($table, 1))
+        exit("Can't create table.  MySQL says: <b>" . mysql_error() . "</b><br>");
 
 ?>
 Tables exist.<hr>
 
+Upgrading schema...
 <?php
-$result = fof_db_query("show columns from $FOF_FEED_TABLE like 'feed_image_cache_date'");
 
-if(mysql_num_rows($result) == 0)
-{
+if (!mysql_num_rows(fof_db_query("show columns from $FOF_FEED_TABLE like 'feed_image_cache_date'")) &&
+    !fof_db_query("ALTER TABLE $FOF_FEED_TABLE ADD `feed_image_cache_date` INT( 11 ) DEFAULT '0' AFTER `feed_image`;"))
+    exit("Can't add column feed_image_cache_date to table $FOF_FEED_TABLE.  MySQL says: <b>" . mysql_error() . "</b><br>");
 
-print "Upgrading schema...";
+if (!mysql_num_rows(fof_db_query("show columns from $FOF_USER_TABLE like 'user_password_hash'")) &&
+    (!fof_db_query("ALTER TABLE $FOF_USER_TABLE CHANGE `user_password` `user_password_hash` VARCHAR( 32 ) NOT NULL") ||
+     !fof_db_query("update $FOF_USER_TABLE set user_password_hash = md5(concat(user_password_hash, user_name))")))
+    exit("Can't change column user_password to user_password_hash.  MySQL says: <b>" . mysql_error() . "</b><br>");
 
-fof_db_query("ALTER TABLE $FOF_FEED_TABLE ADD `feed_image_cache_date` INT( 11 ) DEFAULT '0' AFTER `feed_image` ;");
+if (!mysql_num_rows(fof_db_query("show columns from $FOF_FEED_TABLE like 'feed_cache_attempt_date'")) &&
+    !fof_db_query("ALTER TABLE $FOF_FEED_TABLE ADD `feed_cache_attempt_date` INT( 11 ) DEFAULT '0' AFTER `feed_cache_date`;"))
+    exit("Can't add column feed_cache_attempt_date to table $FOF_FEED_TABLE.  MySQL says: <b>" . mysql_error() . "</b><br>");
 
-print "Done.<hr>";
-}
 ?>
-
-
-<?php
-$result = fof_db_query("show columns from $FOF_USER_TABLE like 'user_password_hash'");
-
-if(mysql_num_rows($result) == 0)
-{
-
-print "Upgrading schema...";
-
-fof_db_query("ALTER TABLE $FOF_USER_TABLE CHANGE `user_password` `user_password_hash` VARCHAR( 32 ) NOT NULL");
-fof_db_query("update $FOF_USER_TABLE set user_password_hash = md5(concat(user_password_hash, user_name))");
-
-print "Done.<hr>";
-}
-?>
-
-
-<?php
-$result = fof_db_query("show columns from $FOF_FEED_TABLE like 'feed_cache_attempt_date'");
-
-if(mysql_num_rows($result) == 0)
-{
-
-print "Upgrading schema...";
-
-fof_db_query("ALTER TABLE $FOF_FEED_TABLE ADD `feed_cache_attempt_date` INT( 11 ) DEFAULT '0' AFTER `feed_cache_date` ;");
-
-print "Done.<hr>";
-}
-?>
+Schema up to date.<hr>
 
 Inserting initial data...
-
 <?php
 fof_db_query("insert into $FOF_TAG_TABLE (tag_id, tag_name) values (1, 'unread')", 1);
 fof_db_query("insert into $FOF_TAG_TABLE (tag_id, tag_name) values (2, 'star')", 1);
 ?>
-
 Done.<hr>
 
 Checking cache directory...
 <?php
 
-if ( ! file_exists( "cache" ) )
+if (!file_exists("cache"))
 {
-	$status = @mkdir( "cache", 0755 );
-
-	if ( ! $status )
-	{
-		echo "<font color='red'>Can't create directory <code>" . getcwd() . "/cache/</code>.<br>You will need to create it yourself, and make it writeable by your PHP process.<br>Then, reload this page.</font>";
-		echo "</div></body></html>";
+    $status = @mkdir("cache", 0755);
+    if (!$status)
+    {
+        echo "<font color='red'>Can't create directory <code>" . getcwd() . "/cache/</code>.<br>You will need to create it yourself, and make it writeable by your PHP process.<br>Then, reload this page.</font>";
+        echo "</div></body></html>";
         exit;
-	}
+    }
 }
 
-if(!is_writable( "cache" ))
+if(!is_writable("cache"))
 {
-		echo "<font color='red'>The directory <code>" . getcwd() . "/cache/</code> exists, but is not writable.<br>You will need to make it writeable by your PHP process.<br>Then, reload this page.</font>";
-		echo "</div></body></html>";
-		exit;
+    echo "<font color='red'>The directory <code>" . getcwd() . "/cache/</code> exists, but is not writable.<br>You will need to make it writeable by your PHP process.<br>Then, reload this page.</font>";
+    echo "</div></body></html>";
+    exit;
 }
 
 ?>
-
 Cache directory exists and is writable.<hr>
 
 <?php
-	$result = fof_db_query("select * from $FOF_USER_TABLE where user_name = 'admin'");
-	if(mysql_num_rows($result) == 0) {
+$result = fof_db_query("select * from $FOF_USER_TABLE where user_name = 'admin'");
+if(mysql_num_rows($result) == 0) {
 ?>
-
 You now need to choose an initial password for the 'admin' account:<br>
 
 <form>

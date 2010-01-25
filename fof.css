@@ -100,11 +100,14 @@ p
     padding: 2px;
 }
 
-
 .odd-row
 {
     background: #dddddd;
 }
+
+.feedprefs { margin-bottom: 8px; }
+.feedprefs input.editbox { border-color: lightgray; border-width: 0 0 1px 0; border-style: solid; }
+.odd-row input.editbox { border-width: 0; }
 
 .unread
 {
@@ -112,12 +115,10 @@ p
     color: red;
 }
 
-
 .unread-item
 {
     font-weight: bold;
 }
-
 
 #items
 {

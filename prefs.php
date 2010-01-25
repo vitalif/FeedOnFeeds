@@ -33,46 +33,67 @@ if(isset($_POST['adminprefs']))
     }
 }
 
-if(isset($_REQUEST['tagfeeds']))
+if (isset($_REQUEST['tagfeeds']))
 {
+    $allow_prop = array('untag' => 1, 'tag' => 1, 'filter' => 1, 'title' => 1, 'hide' => 1, 'orighide' => 1);
     foreach ($_REQUEST as $k => $v)
     {
+        list($prop, $feed_id) = explode('_', $k);
+        if (!$allow_prop[$prop])
+            continue;
+        if (!($feed = fof_db_get_feed_by_id($feed_id)))
+            continue;
         // remove tags
-        if (substr($k, 0, 5) == 'untag')
+        if ($prop == 'untag')
         {
-            $feed_id = substr($k, 5);
-            if ($feed = fof_db_get_feed_by_id($feed_id))
+            foreach ($v as $tag)
             {
-                foreach ($v as $tag)
-                {
-                    fof_untag_feed(fof_current_user(), $feed_id, $tag);
-                    $message[] = 'Dropped \''.$tag.'\' from \''.$feed['feed_title'].'\'';
-                }
+                fof_untag_feed(fof_current_user(), $feed_id, $tag);
+                $message[] = 'Dropped \''.$tag.'\' from \''.htmlspecialchars($_REQUEST["title_$feed_id"]).'\'';
             }
         }
         // add tags
-        else if (substr($k, 0, 3) == 'tag')
+        else if ($prop == 'tag')
         {
-            $feed_id = substr($k, 3);
-            if ($feed = fof_db_get_feed_by_id($feed_id))
+            foreach (preg_split("/[\s,]*,[\s,]*/", $v) as $tag)
             {
-                foreach (preg_split("/[\s,]*,[\s,]*/", $v) as $tag)
+                if ($tag)
                 {
-                    if ($tag)
-                    {
-                        fof_tag_feed(fof_current_user(), $feed_id, $tag);
-                        $message[] = 'Tagged \''.$feed['feed_title'].'\' as '.$tag;
-                    }
+                    fof_tag_feed(fof_current_user(), $feed_id, $tag);
+                    $message[] = 'Tagged \''.htmlspecialchars($_REQUEST["title_$feed_id"]).'\' as '.htmlspecialchars($tag);
                 }
             }
         }
         // change filter
-        else if (substr($k, 0, 6) == 'filter')
+        else if ($prop == 'filter')
         {
-            $feed_id = substr($k, 6);
-            if (($feed = fof_db_get_feed_by_id($feed_id)) &&
-                fof_db_set_feed_filter(fof_current_user(), $feed_id, $v))
-                $message[] = 'Set filter \''.$v.'\' for feed \''.$feed['feed_title'].'\'';
+            if (fof_db_set_feedprop(fof_current_user(), $feed_id, 'filter', $v))
+                $message[] = 'Set filter \''.htmlspecialchars($v).'\' for feed \''.htmlspecialchars($_REQUEST["title_$feed_id"]).'\'';
+        }
+        // rename feed
+        else if ($prop == 'title' && $v != $_POST['origtitle_'.$feed_id])
+        {
+            if ($feed['feed_title'] == $v)
+                $v = '';
+            if (fof_db_set_feedprop(fof_current_user(), $feed_id, 'feed_title', $v))
+            {
+                if ($v)
+                    $message[] = 'Renamed feed \''.htmlspecialchars($feed['feed_title']).'\' to \''.htmlspecialchars($v).'\'';
+                else
+                    $message[] = 'Feed title resetted for \''.htmlspecialchars($feed['feed_title']).'\'';
+            }
+        }
+        // show item content by default
+        else if ($prop == 'hide' && $v && !$_POST['orighide_'.$feed_id])
+        {
+            if (fof_db_set_feedprop(fof_current_user(), $feed_id, 'hide_content', true))
+                $message[] = 'Items of feed \''.htmlspecialchars($_REQUEST["title_$feed_id"]).'\' will be shown collapsed by default';
+        }
+        // hide item content by default
+        else if ($prop == 'orighide' && $v && !$_POST['hide_'.$feed_id])
+        {
+            if (fof_db_set_feedprop(fof_current_user(), $feed_id, 'hide_content', false))
+                $message[] = 'Items of feed \''.htmlspecialchars($_REQUEST["title_$feed_id"]).'\' will be shown expanded by default';
         }
     }
 }
@@ -96,7 +117,7 @@ if(isset($_POST['prefs']))
     if($_POST['password'] && ($_POST['password'] == $_POST['password2']))
     {
         fof_db_change_password($fof_user_name, $_POST['password']);
-        setcookie ( "user_password_hash",  md5($_POST['password'] . $fof_user_name), time()+60*60*24*365*10 );
+        setcookie ("user_password_hash", md5($_POST['password'] . $fof_user_name), time()+60*60*24*365*10);
         $message = "Updated password.";
     }
     else if($_POST['password'] || $_POST['password2'])
@@ -118,19 +139,13 @@ if(isset($_POST['plugins']))
     $plugins = array();
     $dirlist = opendir(FOF_DIR . "/plugins");
     while($file=readdir($dirlist))
-    {
         if(ereg('\.php$',$file))
-        {
-           $plugins[] = substr($file, 0, -4);
-        }
-    }
+            $plugins[] = substr($file, 0, -4);
 
     closedir();
 
     foreach($plugins as $plugin)
-    {
         $prefs->set("plugin_" . $plugin, $_POST[$plugin] != "on");
-    }
 
     $prefs->save(fof_current_user());
 
@@ -224,7 +239,7 @@ URL to be linked on shared page: <input type=string name=sharedurl value="<?php 
 ?>
 
 <?php foreach($plugins as $plugin) { ?>
-<input type=checkbox name="<?php echo $plugin ?>" <?php if(!$prefs->get("plugin_" . $plugin)) echo "checked"; ?>> Enable plugin <tt><?php echo $plugin?></tt>?<br>
+<input type="checkbox" name="<?php echo $plugin ?>" <?php if(!$prefs->get("plugin_" . $plugin)) echo "checked"; ?>> Enable plugin <tt><?php echo $plugin?></tt>?<br>
 <?php } ?>
 
 <br>
@@ -241,16 +256,24 @@ URL to be linked on shared page: <input type=string name=sharedurl value="<?php 
 </form>
 
 <br><h1>Feed on Feeds - Feeds, Tags and Filters</h1>
+<p style="font-size: 90%"><font color=red>*</font> Check 'Hide' if you want to hide contents of items of the corresponding feed by default.<br />
+Click 'Filter' and enter a regular expression to filter out items matching it directly into "already read" state.<br />
+Don't forget to Save preferences after making changes :-)</p>
 <div style="border: 1px solid black; margin: 10px; padding: 10px; font-size: 12px; font-family: verdana, arial;">
 <form method="post" action="?tagfeeds=1">
-<table cellpadding=3 cellspacing=0>
-<tr><th colspan="2" align="left">Feed</th><th>Remove tags</th><th>Add tags</th><th>Item filter regexp</th></tr>
+<table cellpadding="3" cellspacing="0" class="feedprefs">
+<tr valign="top">
+    <th colspan="2" align="left">Feed</th>
+    <th>Remove tags</th>
+    <th>Add tags<br><small style='font-weight: normal'>(separate with ,)</small></th>
+    <th>Preferences</th>
+</tr>
 <?php
 foreach($feeds as $row)
 {
     $id = $row['feed_id'];
     $url = $row['feed_url'];
-    $title = $row['feed_title'];
+    $title = fof_feed_title($row);
     $link = $row['feed_link'];
     $description = $row['feed_description'];
     $age = $row['feed_age'];
@@ -264,21 +287,17 @@ foreach($feeds as $row)
     $tags = $row['tags'];
 
     if(++$t % 2)
-    {
         print '<tr class="odd-row">';
-    }
     else
-    {
         print '<tr>';
-    }
 
     if($row['feed_image'] && $prefs->get('favicons')) { ?>
-        <td><a href="<?=$url?>" title="feed"><img src='<?=$row['feed_image']?>' width='16' height='16' border='0' /></a></td>
+        <td><a href="<?=$url?>" title="<?=htmlspecialchars($row['feed_title'])?>"><img src='<?=$row['feed_image']?>' width='16' height='16' border='0' /></a></td>
     <? } else { ?>
-        <td><a href="<?=$url?>" title="feed"><img src='image/feed-icon.png' width='16' height='16' border='0' /></a></td>
+        <td><a href="<?=$url?>" title="<?=htmlspecialchars($row['feed_title'])?>"><img src='image/feed-icon.png' width='16' height='16' border='0' /></a></td>
     <? } ?>
 
-    <td><a href="<?=$link?>" title="home page"><?=$title?></a></td>
+    <td><input type="hidden" name="origtitle_<?=$id?>" value="<?=htmlspecialchars($title)?>" /><input class="editbox" type="text" name="title_<?=$id?>" value="<?=htmlspecialchars($title)?>" size="50" /> <a href="<?=$link?>" title="home page"><img src="image/external.png" alt=" " width="10" height="10" /></a</td>
     <td align=right>
 
     <?
@@ -288,17 +307,24 @@ foreach($feeds as $row)
         foreach($tags as $tag)
         {
             $utag = htmlspecialchars($tag);
-            print "<span id='t{$id}_{$i}'>$tag</span> <input onclick='document.getElementById(\"t{$id}_{$i}\").style.textDecoration=this.checked ? \"line-through\" : \"\"' type='checkbox' name='untag{$id}[]' value='$utag'>";
+            print "<span id='t{$id}_{$i}'>$tag</span> <input onclick='document.getElementById(\"t{$id}_{$i}\").style.textDecoration=this.checked ? \"line-through\" : \"\"' type='checkbox' name='untag_{$id}[]' value='$utag'>";
             $i++;
         }
     }
-
-    print "</td>";
-    $title = htmlspecialchars($title);?>
-    <td><input type=hidden name=title value="<?=$title?>"><input type="text" name="tag<?=$id?>" /> <small><i>(separate tags with commas)</i></small></td><td><input type="text" name="filter<?=$id?>" value="<?=htmlspecialchars($row['prefs']['filter'])?>" /></td></tr>
+    $flt = htmlspecialchars($row['prefs']['filter']);
+    ?>
+    </td>
+    <td><input class="editbox" type="text" name="tag_<?=$id?>" /></td>
+    <td>
+        <input type="hidden" name="orighide_<?=$id?>" value="<?=$row['prefs']['hide_content'] ? 1 : 0?>" />
+        <input type="checkbox" value="1" name="hide_<?=$id?>" title="Hide item content by default" <?=$row['prefs']['hide_content'] ? "checked" : ""?> /><label for="hide_<?=$id?>" title="Hide item content by default">Hide</label> |
+        <span id="fspan<?=$id?>" style="display:none">Filter: <input class="editbox" type="text" name="filter_<?=$id?>" value="<?=$flt?>" /></span>
+        <span id="ftspan<?=$id?>"><a id="fa<?=$id?>" href="javascript:show_filter('<?=$id?>')">Filter</a><?=$flt ? ": $flt" : ""?></span>
+    </td>
+</tr>
 <? } ?>
 </table>
-<input type="submit" value="Update tags and filters">
+<input type="submit" value="Update tags and filters" />
 </form>
 </div>
 

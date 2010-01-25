@@ -329,13 +329,13 @@ function fof_get_feeds($user_id, $order = 'feed_title', $direction = 'asc')
         $id = $row['feed_id'];
         $age = $row['feed_cache_date'];
 
+        $feeds[$i]['prefs'] = unserialize($row['subscription_prefs']);
         $feeds[$i]['feed_id'] = $id;
         $feeds[$i]['feed_url'] = $row['feed_url'];
         $feeds[$i]['feed_title'] = $row['feed_title'];
         $feeds[$i]['feed_link'] = $row['feed_link'];
         $feeds[$i]['feed_description'] = $row['feed_description'];
         $feeds[$i]['feed_image'] = $row['feed_image'];
-        $feeds[$i]['prefs'] = unserialize($row['subscription_prefs']);
         $feeds[$i]['feed_age'] = $age;
 
         list($agestr, $agestrabbr) = fof_nice_time_stamp($age);
@@ -423,6 +423,18 @@ function fof_get_feeds($user_id, $order = 'feed_title', $direction = 'asc')
     return $feeds;
 }
 
+function fof_feed_title($feed, $prefs = NULL)
+{
+    if (!$prefs)
+        $prefs = $feed['prefs'];
+    if (!$prefs)
+        $prefs = fof_db_get_subscription_prefs(fof_current_user(), $feed['feed_id']);
+    $t = $prefs['feed_title'];
+    if (!$t)
+        $t = $feed['feed_title'];
+    return $t;
+}
+
 function fof_view_title($feed=NULL, $what="new", $when=NULL, $start=NULL, $limit=NULL, $search=NULL)
 {
     $prefs = fof_prefs();
@@ -430,26 +442,38 @@ function fof_view_title($feed=NULL, $what="new", $when=NULL, $start=NULL, $limit
 
     if(!is_null($when) && $when != "")
     {
-        $title .= ' - ' . $when ;
+        $title .= ' - ' . $when;
     }
-    if(!is_null($feed) && $feed != "")
+
+    if (!is_null($feed) && $feed != "" &&
+        ($r = fof_db_get_feed_by_id($feed)))
     {
-        $r = fof_db_get_feed_by_id($feed);
-        $title .=' - ' . $r['feed_title'];
+        $title .= ' - ' . htmlspecialchars(fof_feed_title($r), ENT_QUOTES);
     }
+
     if(is_numeric($start))
     {
         if(!is_numeric($limit)) $limit = $prefs["howmany"];
         $title .= " - items $start to " . ($start + $limit);
     }
+
     if($what != "all")
     {
-        $title .=' - new items';
+        $wh = array();
+        $new = '';
+        foreach(explode(',', $what) as $t)
+        {
+            if ($t == 'unread')
+                $new = ' new';
+            else
+                $wh[] = $t;
+        }
+        $title .= ' -' . $new . ' items';
+        if (count($wh))
+            $title .= ' tagged '.implode(',', $wh);
     }
     else
-    {
         $title .= ' - all items';
-    }
 
     if(isset($search))
     {
@@ -464,13 +488,11 @@ function fof_get_items($user_id, $feed=NULL, $what="unread", $when=NULL, $start=
     global $fof_item_filters;
 
     $items = fof_db_get_items($user_id, $feed, $what, $when, $start, $limit, $order, $search);
-
-    for($i=0; $i<count($items); $i++)
+    for ($i = 0; $i < count($items); $i++)
     {
         foreach($fof_item_filters as $filter)
-        {
             $items[$i]['item_content'] = $filter($items[$i]['item_content']);
-        }
+        $items[$i]['feed_title'] = fof_feed_title($items[$i]);
     }
 
     return $items;
@@ -481,11 +503,9 @@ function fof_get_item($user_id, $item_id)
     global $fof_item_filters;
 
     $item = fof_db_get_item($user_id, $item_id);
-
     foreach($fof_item_filters as $filter)
-    {
         $item['item_content'] = $filter($item['item_content']);
-    }
+    $item['feed_title'] = fof_feed_title($item);
 
     return $item;
 }
@@ -518,13 +538,9 @@ function fof_get_nav_links($feed=NULL, $what="new", $when=NULL, $start=NULL, $li
     if(!is_null($when) && $when != "")
     {
         if($when == "today")
-        {
-                $whendate = fof_todays_date();
-        }
+            $whendate = fof_todays_date();
         else
-        {
-                $whendate = $when;
-        }
+            $whendate = $when;
 
         $begin = strtotime($whendate);
 
@@ -555,7 +571,7 @@ function fof_render_feed_link($row)
 {
     $link = $row['feed_link'];
     $description = $row['feed_description'];
-    $title = $row['feed_title'];
+    $title = htmlspecialchars(fof_feed_title($row), ENT_QUOTES);
     $url = $row['feed_url'];
 
     $s = "<b><a href=\"$link\" title=\"$description\">$title</a></b> ";
@@ -642,7 +658,7 @@ function fof_subscribe($user_id, $url, $unread="today")
             return '<font color="green"><b>Subscribed.</b></font><!-- '.$feed['feed_id'].' --><br>';
         }
 
-        $id = fof_add_feed($url, $rss->get_title(), $rss->get_link(), $rss->get_description() );
+        $id = fof_add_feed($url, rss_feed_title($rss), $rss->get_link(), $rss->get_description() );
 
         fof_update_feed($id);
         fof_db_add_subscription($user_id, $id);
@@ -737,6 +753,11 @@ function fof_apply_tags($item)
     fof_mark_item_unread($item['feed_id'], $item['item_id'], $filtered);
 }
 
+function rss_feed_title($rss)
+{
+    return html_entity_decode(strip_tags($rss->get_title()), ENT_QUOTES);
+}
+
 function fof_update_feed($id)
 {
     if(!$id) return 0;
@@ -772,7 +793,7 @@ function fof_update_feed($id)
         $image_cache_date = time();
     }
 
-    $title = $rss->get_title();
+    $title = rss_feed_title($rss);
     if($title == "") $title = "[no title]";
 
     fof_db_feed_update_metadata($id, $sub, $title, $rss->get_link(), $rss->get_description(), $image, $image_cache_date );

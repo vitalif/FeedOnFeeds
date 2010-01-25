@@ -43,7 +43,6 @@ function do_highlight($full_body, $q, $class){
 	return $full_body_hl;
 }
 
-
 function fof_render_item($item)
 {
     $items = true;
@@ -93,7 +92,7 @@ function fof_render_item($item)
 			id="c<?php echo $item_id ?>"
 			value="checked"
 			ondblclick='flag_upto("c<?php echo $item_id?>");'
-            onclick='return checkbox(event);'
+			onclick='return checkbox(event);'
 			title='shift-click or double-click to flag all items up to this one'
 		/>
 	</span>
@@ -157,27 +156,25 @@ function fof_render_item($item)
 		</div>
 
     </span>
-    
+
     <span class='dash'> - </span>
-    
+
     <h2>
 
     <?php $prefs = fof_prefs(); if($feed_image && $prefs['favicons']) { ?>
-    <a href="<?php echo $feed_link ?>" title='<?php echo $feed_description ?>'><img src="<?php echo $feed_image ?>" height="16" width="16" border="0" /></a>
+    <a href="<?=htmlspecialchars($feed_link)?>" title="<?=htmlspecialchars($feed_description)?>"><img src="<?=$feed_image?>" height="16" width="16" border="0" /></a>
     <?php } ?>
-    <a href="<?php echo $feed_link ?>" title='<?php echo $feed_description ?>'><?php echo $feed_title ?></a>
+    <a href="<?=htmlspecialchars($feed_link)?>" title="<?=htmlspecialchars($feed_description)?>"><?=htmlspecialchars($feed_title)?></a>
     </h2>
 
-	<span class="meta">on <?php echo $item_published ?></span>
+    <span class="meta">on <?php echo $item_published ?></span>
 
 </div>
-
 
 <div class="body"><?php echo $item_content ?></div>
 
 <?php
     $widgets = fof_get_widgets($item);
-    
     if($widgets) {
 ?>
 
@@ -187,9 +184,7 @@ function fof_render_item($item)
 
 <?php
     foreach($widgets as $widget)
-    {
         echo "<span class='widget'>$widget</span> ";
-    }
 ?>
 
 </div>

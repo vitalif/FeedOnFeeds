@@ -16,29 +16,19 @@ include_once("fof-main.php");
 include_once("fof-render.php");
 
 if($_GET['how'] == 'paged' && !isset($_GET['which']))
-{
 	$which = 0;
-}
 else
-{
 	$which = $_GET['which'];
-}
 
 $order = $_GET['order'];
 
 if(!isset($_GET['what']))
-{
-    $what = "unread";
-}
+	$what = "unread";
 else
-{
-    $what = $_GET['what'];
-}
+	$what = $_GET['what'];
 
 if(!isset($_GET['order']))
-{
 	$order = $fof_prefs_obj->get("order");
-}
 
 $how = $_GET['how'];
 $feed = $_GET['feed'];
@@ -89,8 +79,6 @@ $noedit = $_GET['noedit'];
 	<li><a href="javascript:hide_all()">Hide all</a></li>
 </ul>
 
-
-
 <!-- close this form to fix first item! -->
 
 		<form id="itemform" name="items" action="view-action.php" method="post" onSubmit="return false;">
@@ -98,16 +86,11 @@ $noedit = $_GET['noedit'];
 		<input type="hidden" name="return" />
 
 <?php
-	$links = fof_get_nav_links($_GET['feed'], $what, $_GET['when'], $which, $_GET['howmany']);
+$links = fof_get_nav_links($_GET['feed'], $what, $_GET['when'], $which, $_GET['howmany']);
 
-	if($links)
-	{
-?>
-		<center><?php echo $links ?></center>
-
-<?php
-	}
-
+if($links) { ?>
+	<center><?php echo $links ?></center><?php
+}
 
 $result = fof_get_items(fof_current_user(), $_GET['feed'], $what, $_GET['when'], $which, $_GET['howmany'], $order, $_GET['search']);
 
@@ -118,7 +101,7 @@ foreach($result as $row)
 	$item_id = $row['item_id'];
 	if($first) print "<script>firstItem = 'i$item_id'; </script>";
 	$first = false;
-	print '<div class="item shown" id="i' . $item_id . '"  onclick="return itemClicked(event)">';
+	print '<div class="item '.($row['prefs']['hide_content'] ? 'hidden' : 'shown').'" id="i' . $item_id . '"  onclick="return itemClicked(event)">';
 	fof_render_item($row);
 	print '</div>';
 }
@@ -128,9 +111,12 @@ if(count($result) == 0)
 	echo "<p><i>No items found.</i></p>";
 }
 
+if($links) { ?>
+	<center><?php echo $links ?></center><?php
+}
 ?>
 		</form>
-        
+
         <div id="end-of-items"></div>
 
 <script>itemElements = $$('.item');</script>

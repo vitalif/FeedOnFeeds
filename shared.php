@@ -40,12 +40,11 @@ $feed = NULL;
 if(isset($_GET['feed']))
 {
     $feed = $_GET['feed'];
-    $r = fof_db_get_feed_by_id($feed);
-    $extratitle .= " from <a href='" . $r['feed_link'] . "'>" . $r['feed_title'] . "</a>";
+    $r = fof_db_get_feed_by_id($feed, fof_current_user());
+    $extratitle .= ' from <a href="' . htmlspecialchars($r['feed_link']) . '">' . htmlspecialchars(fof_feed_title($r)) . '</a>';
 }
 
 $result = fof_get_items($user, $feed, $which, NULL, 0, 100);
-
 
 $shared_feed = "http://" . $_SERVER['SERVER_NAME'] . $_SERVER['PHP_SELF'] . "?user=$user&format=atom";
 $shared_link = "http://" . $_SERVER['SERVER_NAME'] . $_SERVER['PHP_SELF'] . "?user=$user";
@@ -61,7 +60,6 @@ if(isset($_GET['feed']))
     $shared_feed .= '&feed=' . $_GET['feed'];
     $shared_link .= '&feed=' . $_GET['feed'];
 }
-
 
 if($format == "atom")
 {
@@ -84,7 +82,7 @@ foreach($result as $item)
 {
     $feed_link = htmlspecialchars($item['feed_link']);
     $feed_url = htmlspecialchars(preg_replace('!^([a-z0-9_]+)://[^/]*:[^/]*@!is', '\1://', $item['feed_url']));
-    $feed_title = htmlspecialchars($item['feed_title']);
+    $feed_title = htmlspecialchars(fof_feed_title($item));
 
     $item_link = htmlspecialchars($item['item_link']);
 
@@ -170,7 +168,7 @@ foreach($result as $item)
     print '<div class="item shown" id="i' . $item_id . '">';
 
     $feed_link = $item['feed_link'];
-    $feed_title = $item['feed_title'];
+    $feed_title = fof_feed_title($item);
     $feed_image = $item['feed_image'];
     $feed_description = $item['feed_description'];
 
@@ -189,27 +187,23 @@ foreach($result as $item)
 ?>
 
 <div class="header">
-
     <h1>
         <a href="<?php echo $item_link ?>">
             <?php echo $item_title ?>
         </a>
     </h1>
 
-
     <span class='dash'> - </span>
 
     <h2>
 
-    <a href="<?php echo $feed_link ?>" title='<?php echo $feed_description ?>'><img src="<?php echo $feed_image ?>" height="16" width="16" border="0" /></a>
-    <a href="<?php echo $feed_link ?>" title='<?php echo $feed_description ?>'><?php echo $feed_title ?></a>
+    <a href="<?=htmlspecialchars($feed_link)?>" title="<?=htmlspecialchars($feed_description)?>"><img src="<?=htmlspecialchars($feed_image)?>" height="16" width="16" border="0" /></a>
+    <a href="<?=htmlspecialchars($feed_link)?>" title="<?=htmlspecialchars($feed_description)?>"><?=htmlspecialchars($feed_title)?></a>
 
     </h2>
 
     <span class="meta">on <?php echo $item_published ?> GMT</span>
-
 </div>
-
 
 <div class="body"><?php echo $item_content ?></div>
 

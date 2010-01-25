@@ -68,7 +68,7 @@ else
 echo "<script>starred = $starred;</script>";
 
 ?>
-        
+
 <li <?php if($what == "unread") echo "style='background: #ddd'" ?> ><a href=".?what=unread"><font color=red><b>Unread <?php if($unread) echo "($unread)" ?></b></font></a></li>
 <li <?php if($what == "star") echo "style='background: #ddd'" ?> ><a href=".?what=star"><img src="image/star-on.gif" border="0" height="10" width="10"> Starred <span id="starredcount"><?php if($starred) echo "($starred)" ?></span></a></li>
 <li <?php if($what == "all" && isset($when)) echo "style='background: #ddd'" ?> ><a href=".?what=all&when=today">&lt; Today</a></li>
@@ -114,33 +114,27 @@ if($n)
 
 <?php
 foreach($tags as $tag)
-{   
-   $tag_name = $tag['tag_name'];
-   $tag_id = $tag['tag_id'];
-   $count = $tag['count'];
-   $unread = $tag['unread'];
- 
-   if($tag_id == 1 || $tag_id == 2) continue;
+{
+    $tag_name = $tag['tag_name'];
+    $tag_id = $tag['tag_id'];
+    $count = $tag['count'];
+    $unread = $tag['unread'];
 
-   if(++$t % 2)
-   {
-      print "<tr class=\"odd-row\">";
-   }
-   else
-   {
-      print "<tr>";
-   }
+    if($tag_id == 1 || $tag_id == 2) continue;
 
-   print "<td>";
-   if($unread) print "<a class='unread' href='.?what=$tag_name,unread'>$unread</a>/";
-   print "<a href='.?what=$tag_name'>$count</a></td>";
-   print "<td><b><a href='.?what=$tag_name'>$tag_name</a></b></td>";
-   print "<td><a href=\"#\" title=\"untag all items\" onclick=\"if(confirm('Untag all [$tag_name] items --are you SURE?')) { delete_tag('$tag_name'); return false; }  else { return false; }\">[x]</a></td>";
+    if(++$t % 2)
+        print "<tr class=\"odd-row\">";
+    else
+        print "<tr>";
 
-   print "</tr>";
+    print "<td>";
+    if ($unread) print "<a class='unread' href='.?what=$tag_name,unread'>$unread</a>/";
+    print "<a href='.?what=$tag_name&how=paged'>$count</a></td>";
+    print "<td><b><a href='.?what=$tag_name".($unread?",unread":"&how=paged")."'>$tag_name</a></b></td>";
+    print "<td><a href=\"#\" title=\"untag all items\" onclick=\"if(confirm('Untag all [$tag_name] items --are you SURE?')) { delete_tag('$tag_name'); return false; }  else { return false; }\">[x]</a></td>";
+
+    print "</tr>";
 }
-
-
 ?>
 
 </table>
@@ -150,7 +144,6 @@ foreach($tags as $tag)
 <br>
 
 <?php } ?>
-
 
 <div id="feeds">
 
@@ -184,9 +177,9 @@ foreach (array("feed_age", "max_date", "feed_unread", "feed_url", "feed_title") 
     {
         $url = "return change_feed_order('$col', 'asc')";
     }
-    
+
     echo "<td><nobr><a href='#' title='$title[$col]' onclick=\"$url\">";
-    
+
     if($col == "feed_unread")
     {
         echo "<span class=\"unread\">#</span>";
@@ -195,12 +188,12 @@ foreach (array("feed_age", "max_date", "feed_unread", "feed_url", "feed_title") 
     {
         echo $name[$col];
     }
-    
+
     if($col == $order)
     {
         echo ($direction == "asc") ? "&darr;" : "&uarr;";
     }
-    
+
     echo "</a></nobr></td>";
 }
 
@@ -213,74 +206,63 @@ foreach (array("feed_age", "max_date", "feed_unread", "feed_url", "feed_title") 
 
 foreach($feeds as $row)
 {
-   $id = $row['feed_id'];
-   $url = $row['feed_url'];
-   $title = $row['feed_title'];
-   $link = $row['feed_link'];
-   $description = $row['feed_description'];
-   $age = $row['feed_age'];
-   $unread = $row['feed_unread'];
-   $starred = $row['feed_starred'];
-   $items = $row['feed_items'];
-   $agestr = $row['agestr'];
-   $agestrabbr = $row['agestrabbr'];
-   $lateststr = $row['lateststr'];
-   $lateststrabbr = $row['lateststrabbr'];
+    $id = $row['feed_id'];
+    $url = $row['feed_url'];
+    $title = fof_feed_title($row);
+    $link = $row['feed_link'];
+    $description = $row['feed_description'];
+    $age = $row['feed_age'];
+    $unread = $row['feed_unread'];
+    $starred = $row['feed_starred'];
+    $items = $row['feed_items'];
+    $agestr = $row['agestr'];
+    $agestrabbr = $row['agestrabbr'];
+    $lateststr = $row['lateststr'];
+    $lateststrabbr = $row['lateststrabbr'];
 
+    if(++$t % 2)
+        print "<tr class=\"odd-row\">";
+    else
+        print "<tr>";
 
-   if(++$t % 2)
-   {
-      print "<tr class=\"odd-row\">";
-   }
-   else
-   {
-      print "<tr>";
-   }
+    $u = ".?feed=$id";
+    $u2 = ".?feed=$id&amp;what=all&amp;how=paged";
 
-   $u = ".?feed=$id";
-   $u2 = ".?feed=$id&amp;what=all&amp;how=paged";
+    print "<td><span title=\"$agestr\" id=\"${id}-agestr\">$agestrabbr</span></td>";
 
-   print "<td><span title=\"$agestr\" id=\"${id}-agestr\">$agestrabbr</span></td>";
+    print "<td><span title=\"$lateststr\" id=\"${id}-lateststr\">$lateststrabbr</span></td>";
 
-   print "<td><span title=\"$lateststr\" id=\"${id}-lateststr\">$lateststrabbr</span></td>";
+    print "<td class=\"nowrap\" id=\"${id}-items\">";
 
-   print "<td class=\"nowrap\" id=\"${id}-items\">";
+    if($unread)
+        print "<a class=\"unread\" title=\"new items\" href=\"$u\">$unread</a>/";
 
-   if($unread)
-   {
-      print "<a class=\"unread\" title=\"new items\" href=\"$u\">$unread</a>/";
-   }
+    print "<a href=\"$u2\" title=\"all items\">$items</a>";
 
-   print "<a href=\"$u2\" title=\"all items\">$items</a>";
+    print "</td>";
 
-   print "</td>";
+    print "<td align='center'>";
+    if($row['feed_image'] && $fof_prefs_obj->get('favicons'))
+        print "<a href=\"$url\" title=\"feed\"><img src='" . $row['feed_image'] . "' width='16' height='16' border='0' /></a>";
+    else
+        print "<a href=\"$url\" title=\"feed\"><img src='image/feed-icon.png' width='16' height='16' border='0' /></a>";
+    print "</td>";
 
-   print "<td align='center'>";
-   if($row['feed_image'] && $fof_prefs_obj->get('favicons'))
-   {
-      print "<a href=\"$url\" title=\"feed\"><img src='" . $row['feed_image'] . "' width='16' height='16' border='0' /></a>";
-   }
-   else
-   {
-      print "<a href=\"$url\" title=\"feed\"><img src='image/feed-icon.png' width='16' height='16' border='0' /></a>";
-   }
-   print "</td>";
+    print "<td>";
+    print "<a href=\"".($unread ? $u : $u2)."\" title=\"".($unread ? "unread" : "all")." items\"><b>".htmlspecialchars($title)."</b></a>";
+    if ($link)
+        print " <a href=\"$link\" title=\"home page\"><img style='border-width: 0px' src='image/external.png' /></a>";
+    print "</td>";
+    print "<td><nobr>";
 
-   print "<td>";
-   print "<a href=\"".($unread ? $u : $u2)."\" title=\"".($unread ? "unread" : "all")." items\"><b>$title</b></a>";
-   if ($link)
-       print " <a href=\"$link\" title=\"home page\"><img style='border-width: 0px' src='image/external.png' /></a>";
-   print "</td>";
-   print "<td><nobr>";
+    print "<a href=\"update.php?feed=$id\" title=\"update\">u</a>";
+    $stitle = addslashes($title);
+    print " <a href=\"#\" title=\"mark all read\" onclick=\"if(confirm('Mark all [$stitle] items as read --are you SURE?')) { mark_feed_read($id); return false; }  else { return false; }\">m</a>";
+    print " <a href=\"delete.php?feed=$id\" title=\"delete\" onclick=\"return confirm('Unsubscribe [$stitle] --are you SURE?')\">d</a>";
 
-   print "<a href=\"update.php?feed=$id\" title=\"update\">u</a>";
-   $stitle = htmlspecialchars(addslashes($title));
-   print " <a href=\"#\" title=\"mark all read\" onclick=\"if(confirm('Mark all [$stitle] items as read --are you SURE?')) { mark_feed_read($id); return false; }  else { return false; }\">m</a>";
-   print " <a href=\"delete.php?feed=$id\" title=\"delete\" onclick=\"return confirm('Unsubscribe [$stitle] --are you SURE?')\">d</a>";
-   
-   print "</nobr></td>";
+    print "</nobr></td>";
 
-   print "</tr>";
+    print "</tr>";
 }
 
 ?>
@@ -291,21 +273,15 @@ foreach($feeds as $row)
 
 </div>
 
-
 <?php
 
 $order = $_GET['order'];
 $direction = $_GET['direction'];
 
 if(!isset($order))
-{
-   $order = "title";
-}
+    $order = "title";
 
 if(!isset($direction))
-{
-   $direction = "asc";
-}
+    $direction = "asc";
 
 ?>
-

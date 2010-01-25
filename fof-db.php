@@ -34,9 +34,9 @@ function fof_db_connect()
 
 function fof_db_optimize()
 {
-    global $FOF_FEED_TABLE, $FOF_ITEM_TABLE, $FOF_ITEM_TAG_TABLE, $FOF_SUBSCRIPTION_TABLE, $FOF_TAG_TABLE, $FOF_USER_TABLE;
-
-    fof_db_query("optimize table $FOF_FEED_TABLE, $FOF_ITEM_TABLE, $FOF_ITEM_TAG_TABLE, $FOF_SUBSCRIPTION_TABLE, $FOF_TAG_TABLE, $FOF_USER_TABLE");
+    /* Может быть, проблемы из-за этого? */
+    /*global $FOF_FEED_TABLE, $FOF_ITEM_TABLE, $FOF_ITEM_TAG_TABLE, $FOF_SUBSCRIPTION_TABLE, $FOF_TAG_TABLE, $FOF_USER_TABLE;*/
+    /*fof_db_query("optimize table $FOF_FEED_TABLE, $FOF_ITEM_TABLE, $FOF_ITEM_TAG_TABLE, $FOF_SUBSCRIPTION_TABLE, $FOF_TAG_TABLE, $FOF_USER_TABLE");*/
 }
 
 function fof_safe_query(/* $query, [$args...]*/)
@@ -154,14 +154,14 @@ function fof_db_get_subscriptions($user_id)
 {
     global $FOF_FEED_TABLE, $FOF_ITEM_TABLE, $FOF_SUBSCRIPTION_TABLE, $FOF_ITEM_TAG_TABLE;
 
-    return(fof_safe_query("select * from $FOF_FEED_TABLE, $FOF_SUBSCRIPTION_TABLE where $FOF_SUBSCRIPTION_TABLE.user_id = %d and $FOF_FEED_TABLE.feed_id = $FOF_SUBSCRIPTION_TABLE.feed_id order by feed_title", $user_id));
+    return fof_safe_query("select * from $FOF_FEED_TABLE, $FOF_SUBSCRIPTION_TABLE where $FOF_SUBSCRIPTION_TABLE.user_id = %d and $FOF_FEED_TABLE.feed_id = $FOF_SUBSCRIPTION_TABLE.feed_id order by feed_title", $user_id);
 }
 
 function fof_db_get_feeds()
 {
     global $FOF_FEED_TABLE, $FOF_ITEM_TABLE, $FOF_SUBSCRIPTION_TABLE, $FOF_ITEM_TAG_TABLE;
 
-    return(fof_db_query("select * from $FOF_FEED_TABLE order by feed_title"));
+    return fof_db_query("select * from $FOF_FEED_TABLE order by feed_title");
 }
 
 function fof_db_get_item_by_id($item_id)
@@ -221,21 +221,25 @@ function fof_db_get_feed_by_url($feed_url)
 
     $result = fof_safe_query("select * from $FOF_FEED_TABLE where feed_url='%s'", $feed_url);
 
-    if(mysql_num_rows($result) == 0)
-    {
+    if (mysql_num_rows($result) == 0)
         return NULL;
-    }
 
     $row = mysql_fetch_array($result);
 
     return $row;
 }
 
-function fof_db_get_feed_by_id($feed_id)
+function fof_db_get_feed_by_id($feed_id, $user_id = false)
 {
-    global $FOF_FEED_TABLE, $FOF_ITEM_TABLE, $FOF_SUBSCRIPTION_TABLE, $FOF_ITEM_TAG_TABLE;
+    global $FOF_FEED_TABLE, $FOF_SUBSCRIPTION_TABLE;
 
-    $result = fof_safe_query("select * from $FOF_FEED_TABLE where feed_id=%d", $feed_id);
+    $j = "";
+    if ($user_id)
+        $j = "JOIN $FOF_SUBSCRIPTION_TABLE s ON s.user_id=".intval($user_id)." AND s.feed_id=s.feed_id";
+    $result = fof_safe_query("select * from $FOF_FEED_TABLE f $j where f.feed_id=%d", $feed_id);
+
+    if (mysql_num_rows($result) == 0)
+        return NULL;
 
     $row = mysql_fetch_array($result);
 
@@ -349,7 +353,7 @@ function fof_db_get_items($user_id=1, $feed=NULL, $what="unread", $when=NULL, $s
     }
 
     $args = array();
-    $select = "SELECT i.* , f.* ";
+    $select = "SELECT i.* , f.*, s.subscription_prefs ";
     $from = "FROM $FOF_FEED_TABLE f, $FOF_ITEM_TABLE i, $FOF_SUBSCRIPTION_TABLE s ";
     $where = sprintf("WHERE s.user_id = %d AND s.feed_id = f.feed_id AND f.feed_id = i.feed_id ", $user_id);
 
@@ -394,6 +398,7 @@ function fof_db_get_items($user_id=1, $feed=NULL, $what="unread", $when=NULL, $s
 
     while($row = mysql_fetch_assoc($result))
     {
+        $row['prefs'] = unserialize($row['subscription_prefs']);
         $array[] = $row;
     }
 
@@ -498,13 +503,13 @@ function fof_db_tag_feed($user_id, $feed_id, $tag_id)
     fof_db_set_subscription_prefs($user_id, $feed_id, $prefs);
 }
 
-function fof_db_set_feed_filter($user_id, $feed_id, $filter)
+function fof_db_set_feedprop($user_id, $feed_id, $prop, $value)
 {
     $chg = false;
     $prefs = fof_db_get_subscription_prefs($user_id, $feed_id);
-    if ($prefs['filter'] != $filter)
+    if ($prefs[$prop] != $value)
     {
-        $prefs['filter'] = $filter;
+        $prefs[$prop] = $value;
         $chg = true;
     }
     fof_db_set_subscription_prefs($user_id, $feed_id, $prefs);
@@ -839,6 +844,20 @@ function fof_db_get_is_duplicate_item($item_id, $item_guid, $content_md5)
         $users[] = $row[0];
     }
     return $users;
+}
+
+function fof_db_set_feed_custom_title($user_id, $feed_id, $feed_title, $custom_title)
+{
+    global $FOF_FEED_TABLE, $FOF_SUBSCRIPTION_TABLE;
+    $prefs = fof_db_get_subscription_prefs($user_id, $feed_id);
+    if (!$prefs)
+        return false;
+    if (!$custom_title || $feed_title == $custom_title)
+        $r = $prefs['feed_title'] = '';
+    else
+        $r = $prefs['feed_title'] = $custom_title;
+    fof_db_set_subscription_prefs($user_id, $feed_id, $prefs);
+    return $r;
 }
 
 ?>
