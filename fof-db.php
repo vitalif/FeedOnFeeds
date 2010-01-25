@@ -97,6 +97,13 @@ function fof_db_get_row($result)
     return mysql_fetch_array($result);
 }
 
+function fof_db_get_value($sql)
+{
+    if (!($result = fof_db_query($sql)) ||
+        !($row = fof_db_get_row($result)))
+        return NULL;
+    return $row[0];
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Feed level stuff
