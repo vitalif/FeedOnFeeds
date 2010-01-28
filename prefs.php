@@ -16,12 +16,14 @@ include_once("fof-main.php");
 
 $prefs =& FoF_Prefs::instance();
 
-if(isset($_POST['adminprefs']))
+if (fof_is_admin() && isset($_POST['adminprefs']))
 {
     $prefs->set('purge', $_POST['purge']);
     $prefs->set('manualtimeout', $_POST['manualtimeout']);
     $prefs->set('autotimeout', $_POST['autotimeout']);
     $prefs->set('logging', $_POST['logging']);
+    $prefs->set('topreaders_days', $_POST['topreaders_days']);
+    $prefs->set('topreaders_count', $_POST['topreaders_count']);
 
     $prefs->save();
 
@@ -324,7 +326,7 @@ foreach($feeds as $row)
 </tr>
 <? } ?>
 </table>
-<input type="submit" value="Update tags and filters" />
+<input type="submit" value="Save feed preferences" />
 </form>
 </div>
 
@@ -336,6 +338,7 @@ Enable logging? <input type=checkbox name=logging <?php if($prefs->get('logging'
 Purge read items after <input size=4 type=string name=purge value="<?php echo $prefs->get('purge')?>"> days (leave blank to never purge)<br><br>
 Allow automatic feed updates every <input size=4 type=string name=autotimeout value="<?php echo $prefs->get('autotimeout')?>"> minutes<br><br>
 Allow manual feed updates every <input size=4 type=string name=manualtimeout value="<?php echo $prefs->get('manualtimeout')?>"> minutes<br><br>
+Show <b>Top <input size=3 type=string name=topreaders_count value="<?=intval($prefs->get('topreaders_count'))?>" /> readers in last <input size=3 type=string name=topreaders_days value="<?=intval($prefs->get('topreaders_days'))?>" /> days</b> statistics on the login page<br><br>
 <input type=submit name=adminprefs value="Save Options">
 </form>
 

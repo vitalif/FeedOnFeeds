@@ -47,6 +47,9 @@ $users = fof_db_get_value("SELECT COUNT(*) FROM fof_user");
 $feeds = fof_db_get_value("SELECT COUNT(*) FROM fof_feed");
 $items = fof_db_get_value("SELECT COUNT(*) FROM fof_item");
 
+if ($fof_prefs_obj && ($days = intval($fof_prefs_obj->admin_prefs['topreaders_days'])) && ($count = intval($fof_prefs_obj->admin_prefs['topreaders_count'])))
+    $topreaders = fof_db_get_top_readers($days, $count);
+
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -54,8 +57,8 @@ $items = fof_db_get_value("SELECT COUNT(*) FROM fof_item");
 <head>
 <title>Feed on Feeds - Log on</title>
 <style>
-body { font-family: georgia; font-size: 16px; }
-div { background: #eee; border: 1px solid black; width: 20em; margin: 5em auto; padding: 1.5em; }
+body { font-family: georgia; font-size: 16px; text-align: center; }
+div { background: #eee; border: 1px solid black; width: 20em; margin: 5em auto 2em; padding: 1.5em; }
 form { margin: 0 0 0 -3px; }
 </style>
 </head>
@@ -71,6 +74,13 @@ form { margin: 0 0 0 -3px; }
 		<center style="padding: 20px 0 0 0; font-size: 75%"><?= "As of ".date("Y-m-d").", $users&nbsp;our&nbsp;users subscribed to $feeds&nbsp;unique&nbsp;feeds with $items&nbsp;items." ?></center>
 	</form>
 </div>
+<?php if($topreaders) { ?>
+<p><?=$days > 1 ? "Last $days days" : "Today's"?> top readers:<br />
+<?php foreach($topreaders as $t) { ?>
+<b><?=htmlspecialchars($t['user_name'])?></b>: <?=$t['posts']?> posts read<br />
+<? } ?>
+</p>
+<? } ?>
 </body>
 
 </html>

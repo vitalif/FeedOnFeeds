@@ -864,4 +864,22 @@ function fof_db_set_feed_custom_title($user_id, $feed_id, $feed_title, $custom_t
     return $r;
 }
 
+function fof_db_get_top_readers($days, $count = NULL)
+{
+    global $FOF_ITEM_TABLE, $FOF_USER_TABLE, $FOF_ITEM_TAG_TABLE, $FOF_SUBSCRIPTION_TABLE, $FOF_TAG_TABLE;
+    $result = fof_db_query(
+"select u.*, count(i.item_id) posts from $FOF_USER_TABLE u
+ join $FOF_SUBSCRIPTION_TABLE s on s.user_id=u.user_id
+ join $FOF_ITEM_TABLE i on i.feed_id=s.feed_id
+ join $FOF_TAG_TABLE t on t.tag_name='unread'
+ left join $FOF_ITEM_TAG_TABLE ti on ti.tag_id=t.tag_id and ti.item_id=i.item_id
+ where i.item_published > ".(time()-intval($days*86400))." and ti.tag_id is null
+ group by u.user_id order by posts desc
+ ".(!is_null($count) ? "limit $count" : ""));
+    $readers = array();
+    while ($row = mysql_fetch_assoc($result))
+        $readers[] = $row;
+    return $readers;
+}
+
 ?>
