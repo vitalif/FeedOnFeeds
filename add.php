@@ -111,7 +111,7 @@ OPML filename: <input type="hidden" name="MAX_FILE_SIZE" value="100000" /><input
 <h1>Most popular feeds</h1>
 <p>
 <?php foreach ($suggest as $feed) { ?>
-<a href="<?=htmlspecialchars('?do=1&rss_url='.urlencode($feed['feed_url']))?>"><?=htmlspecialchars($feed['feed_title'])?></a><a href="<?=htmlspecialchars($feed['feed_link'])?>"><img src="image/external.png" alt=" " width="10" height="10" /></a><br />
+<a href="<?=htmlspecialchars('?do=1&rss_url='.urlencode($feed['feed_url']))?>"><?=htmlspecialchars($feed['feed_title'])?></a> <a href="<?=htmlspecialchars($feed['feed_link'])?>"><img src="image/external.png" alt=" " width="10" height="10" /></a> &ndash; <?=$feed['readers']?> readers<br />
 <?php } ?>
 </p>
 <?php } ?>
