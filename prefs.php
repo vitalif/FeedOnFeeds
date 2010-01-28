@@ -21,9 +21,10 @@ if (fof_is_admin() && isset($_POST['adminprefs']))
     $prefs->set('purge', $_POST['purge']);
     $prefs->set('manualtimeout', $_POST['manualtimeout']);
     $prefs->set('autotimeout', $_POST['autotimeout']);
-    $prefs->set('logging', $_POST['logging']);
-    $prefs->set('topreaders_days', $_POST['topreaders_days']);
-    $prefs->set('topreaders_count', $_POST['topreaders_count']);
+    $prefs->set('logging', $_POST['logging'] && 1);
+    $prefs->set('suggestadd', intval($_POST['suggestadd']));
+    $prefs->set('topreaders_days', intval($_POST['topreaders_days']));
+    $prefs->set('topreaders_count', intval($_POST['topreaders_count']));
 
     $prefs->save();
 
@@ -334,12 +335,13 @@ foreach($feeds as $row)
 
 <br><h1>Feed on Feeds - Admin Options</h1>
 <form method="post" action="prefs.php" style="border: 1px solid black; margin: 10px; padding: 10px;">
-Enable logging? <input type=checkbox name=logging <?php if($prefs->get('logging')) echo "checked" ?>><br><br>
-Purge read items after <input size=4 type=string name=purge value="<?php echo $prefs->get('purge')?>"> days (leave blank to never purge)<br><br>
-Allow automatic feed updates every <input size=4 type=string name=autotimeout value="<?php echo $prefs->get('autotimeout')?>"> minutes<br><br>
-Allow manual feed updates every <input size=4 type=string name=manualtimeout value="<?php echo $prefs->get('manualtimeout')?>"> minutes<br><br>
+Enable logging? <input type=checkbox name=logging <?php if($prefs->get('logging')) echo "checked" ?> /><br><br>
+Purge read items after <input size=4 type=string name=purge value="<?php echo $prefs->get('purge')?>" /> days (leave blank to never purge)<br><br>
+Allow automatic feed updates every <input size=4 type=string name=autotimeout value="<?php echo $prefs->get('autotimeout')?>" /> minutes<br><br>
+Allow manual feed updates every <input size=4 type=string name=manualtimeout value="<?php echo $prefs->get('manualtimeout')?>" /> minutes<br><br>
 Show <b>Top <input size=3 type=string name=topreaders_count value="<?=intval($prefs->get('topreaders_count'))?>" /> readers in last <input size=3 type=string name=topreaders_days value="<?=intval($prefs->get('topreaders_days'))?>" /> days</b> statistics on the login page<br><br>
-<input type=submit name=adminprefs value="Save Options">
+Suggest users to subscribe to <input size=3 type=string name=suggestadd value="<?=intval($prefs->get('suggestadd'))?>" /> most popular feeds<br><br>
+<input type=submit name=adminprefs value="Save Options" />
 </form>
 
 <br><h1>Add User</h1>

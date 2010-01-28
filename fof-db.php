@@ -882,4 +882,19 @@ function fof_db_get_top_readers($days, $count = NULL)
     return $readers;
 }
 
+function fof_db_get_most_popular_feeds($count = NULL)
+{
+    global $FOF_SUBSCRIPTION_TABLE, $FOF_FEED_TABLE;
+    $result = fof_db_query(
+"select *, count(u.user_id) readers from $FOF_FEED_TABLE f join $FOF_SUBSCRIPTION_TABLE u on u.feed_id=f.feed_id
+ left join $FOF_SUBSCRIPTION_TABLE s on s.feed_id=f.feed_id and s.user_id=".fof_current_user()."
+ where s.feed_id is null and f.feed_url not regexp '^[a-z]+://[^/]+:[^/]*@'
+ group by f.feed_id having readers>1 order by readers desc
+ ".(!is_null($count) ? "limit $count" : ""));
+    $feeds = array();
+    while ($row = mysql_fetch_assoc($result))
+        $feeds[] = $row;
+    return $feeds;
+}
+
 ?>
