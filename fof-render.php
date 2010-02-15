@@ -55,6 +55,7 @@ function fof_render_item($item)
 	$item_link = $item['item_link'];
 	$item_id = $item['item_id'];
 	$item_title = $item['item_title'];
+	$item_author = $item['item_author'];
 	$item_content = $item['item_content'];
 	$item_read = $item['item_read'];
 
@@ -167,7 +168,7 @@ function fof_render_item($item)
     <a href="<?=htmlspecialchars($feed_link)?>" title="<?=htmlspecialchars($feed_description)?>"><?=htmlspecialchars($feed_title)?></a>
     </h2>
 
-    <span class="meta">on <?php echo $item_published ?></span>
+    <span class="meta">on <?php echo $item_published ?><?= $item_author?" by $item_author":"" ?></span>
 
 </div>
 

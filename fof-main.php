@@ -815,6 +815,20 @@ function fof_update_feed($id)
         foreach($rss->get_items() as $item)
         {
             $link = $item->get_permalink();
+            $author = $item->get_authors();
+            foreach ($author as &$a)
+            {
+                $an = htmlspecialchars($a->get_name());
+                $al = htmlspecialchars($a->get_link());
+                $ae = htmlspecialchars($a->get_email());
+                if ($al)
+                    $a = "<a href=\"$al\">$an</a>";
+                else if ($ae)
+                    $a = "<a href=\"mailto:$ae\">$an</a>";
+                else
+                    $a = $an;
+            }
+            $author = implode(', ', $author);
             $title = $item->get_title();
             $content = $item->get_content();
             $date = $item->get_date('U');
@@ -836,7 +850,16 @@ function fof_update_feed($id)
                     list($link, $title, $content) = $filter($item, $link, $title, $content);
                 }
 
-                $id = fof_db_add_item($feed_id, $item_id, $link, $title, $content, time(), $date, $date);
+                $id = fof_db_add_item($feed_id, array(
+                    'item_guid'      => $item_id,
+                    'item_link'      => $link,
+                    'item_title'     => $title,
+                    'item_author'    => $author,
+                    'item_content'   => $content,
+                    'item_cached'    => time(),
+                    'item_published' => $date,
+                    'item_updated'   => $date,
+                ));
                 $fof_item = fof_db_get_item_by_id($id);
                 fof_apply_tags($fof_item);
                 fof_apply_plugin_tags($feed_id, $id, NULL);

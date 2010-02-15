@@ -316,14 +316,18 @@ function fof_db_find_item($feed_id, $item_guid)
     }
 }
 
-function fof_db_add_item($feed_id, $guid, $link, $title, $content, $cached, $published, $updated)
+$fof_db_item_fields = array('item_guid', 'item_link', 'item_title', 'item_author', 'item_content', 'item_cached', 'item_published', 'item_updated');
+function fof_db_add_item($feed_id, $item)
 {
-    global $FOF_FEED_TABLE, $FOF_ITEM_TABLE, $FOF_SUBSCRIPTION_TABLE, $fof_connection;
+    global $FOF_FEED_TABLE, $FOF_ITEM_TABLE, $FOF_SUBSCRIPTION_TABLE, $fof_connection, $fof_db_item_fields;
 
-    fof_safe_query("insert into $FOF_ITEM_TABLE (feed_id, item_link, item_guid, item_title, item_content, item_cached, item_published, item_updated) values (%d, '%s', '%s' ,'%s', '%s', %d, %d, %d)",
-    $feed_id, $link, $guid, $title, $content, $cached, $published, $updated);
+    $sql = "insert into $FOF_ITEM_TABLE (feed_id, ".implode(",", $fof_db_item_fields).") values (".intval($feed_id);
+    foreach ($fof_db_item_fields as $k)
+        $sql .= ", '".mysql_real_escape_string($item[$k])."'";
+    $sql .= ")";
+    fof_db_query($sql);
 
-    return(mysql_insert_id($fof_connection));
+    return mysql_insert_id($fof_connection);
 }
 
 function fof_db_get_items($user_id=1, $feed=NULL, $what="unread", $when=NULL, $start=NULL, $limit=NULL, $order="desc", $search=NULL)

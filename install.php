@@ -206,6 +206,7 @@ CREATE TABLE IF NOT EXISTS `$FOF_ITEM_TABLE` (
   `item_published` int(11) NOT NULL default '0',
   `item_updated` int(11) NOT NULL default '0',
   `item_title` text NOT NULL,
+  `item_author` text NOT NULL,
   `item_content` text NOT NULL,
   PRIMARY KEY  (`item_id`),
   KEY `feed_id` (`feed_id`),
@@ -260,6 +261,10 @@ if (!mysql_num_rows(fof_db_query("show columns from $FOF_USER_TABLE like 'user_p
 if (!mysql_num_rows(fof_db_query("show columns from $FOF_FEED_TABLE like 'feed_cache_attempt_date'")) &&
     !fof_db_query("ALTER TABLE $FOF_FEED_TABLE ADD `feed_cache_attempt_date` INT( 11 ) DEFAULT '0' AFTER `feed_cache_date`;"))
     exit("Can't add column feed_cache_attempt_date to table $FOF_FEED_TABLE.  MySQL says: <b>" . mysql_error() . "</b><br>");
+
+if (!mysql_num_rows(fof_db_query("show columns from $FOF_ITEM_TABLE like 'item_author'")) &&
+    !fof_db_query("ALTER TABLE $FOF_ITEM_TABLE ADD `item_author` text NOT NULL AFTER `item_title`;"))
+    exit("Can't add column item_author to table $FOF_ITEM_TABLE.  MySQL says: <b>" . mysql_error() . "</b><br>");
 
 ?>
 Schema up to date.<hr>
