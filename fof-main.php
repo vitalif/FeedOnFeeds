@@ -816,19 +816,24 @@ function fof_update_feed($id)
         {
             $link = $item->get_permalink();
             $author = $item->get_authors();
-            foreach ($author as &$a)
+            if ($author)
             {
-                $an = htmlspecialchars($a->get_name());
-                $al = htmlspecialchars($a->get_link());
-                $ae = htmlspecialchars($a->get_email());
-                if ($al)
-                    $a = "<a href=\"$al\">$an</a>";
-                else if ($ae)
-                    $a = "<a href=\"mailto:$ae\">$an</a>";
-                else
-                    $a = $an;
+                foreach ($author as &$a)
+                {
+                    $an = htmlspecialchars($a->get_name());
+                    $al = htmlspecialchars($a->get_link());
+                    $ae = htmlspecialchars($a->get_email());
+                    if ($al)
+                        $a = "<a href=\"$al\">$an</a>";
+                    else if ($ae)
+                        $a = "<a href=\"mailto:$ae\">$an</a>";
+                    else
+                        $a = $an;
+                }
+                $author = implode(', ', $author);
             }
-            $author = implode(', ', $author);
+            else
+                $author = '';
             $title = $item->get_title();
             $content = $item->get_content();
             $date = $item->get_date('U');
