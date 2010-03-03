@@ -43,6 +43,10 @@
  * @todo phpDoc comments
  */
 
+/* added by FoF (vitalif@yourcmc.ru) to enable environment proxy settings support */
+/* fucking cURL doesn't support this by default */
+require_once('../curl-env-proxy.php');
+
 /**
  * SimplePie Name
  */
@@ -7682,63 +7686,13 @@ class SimplePie_File
 				{
 					curl_setopt($fp, CURLOPT_ENCODING, '');
 				}
-				// added by FoF (vitalif@yourcmc.ru) to enable environment proxy settings support
-				// fucking cURL doesn't support this by default
 				if (preg_match('#^([a-z0-9_]+://)(?:([^/]*:[^/]*)@)([^/@]+([/\?].*)?$)#is', $url, $m))
 				{
 					$headers2[] = "Authorization: Basic ".base64_encode(urldecode($m[2]));
 				}
-				if ($proxy = getenv("http_proxy"))
-				{
-					$useproxy = true;
-					if ($noproxy = preg_split("#\s*,\s*#is", getenv("no_proxy")))
-					{
-						foreach ($noproxy as $n)
-						{
-							if (preg_match('#(\d+)\.(\d+)\.(\d+)\.(\d+)/(\d+)#s', $n, $m) &&
-								preg_match('#^[a-z0-9_]+://(?:[^/]*:[^/]*@)?([^/@]+)(?:/|$|\?)#is', $url, $ip))
-							{
-								$mask = array(
-									max(0x100 - (1 << max( 8-$m[5], 0)), 0),
-									max(0x100 - (1 << max(16-$m[5], 0)), 0),
-									max(0x100 - (1 << max(24-$m[5], 0)), 0),
-									max(0x100 - (1 << max(32-$m[5], 0)), 0),
-								);
-								$ip = @gethostbyname($ip[1]);
-								if (preg_match('#(\d+)\.(\d+)\.(\d+)\.(\d+)#s', $ip, $ipm) &&
-									(intval($ipm[1]) & $mask[0]) == intval($m[1]) &&
-									(intval($ipm[2]) & $mask[1]) == intval($m[2]) &&
-									(intval($ipm[3]) & $mask[2]) == intval($m[3]) &&
-									(intval($ipm[4]) & $mask[3]) == intval($m[4]))
-								{
-									$useproxy = false;
-									break;
-								}
-							}
-							else
-							{
-								$n = preg_replace('/#.*$/is', '', $n);
-								$n = preg_quote($n);
-								$n = str_replace('\\*', '.*', $n);
-								if (preg_match('#'.$n.'#is', $url))
-								{
-									$useproxy = false;
-									break;
-								}
-							}
-						}
-					}
-					if ($useproxy)
-					{
-						$proxy = preg_replace('#^http://#is', '', $proxy);
-						$proxy = preg_replace('#/*$#is', '', $proxy);
-						curl_setopt($fp, CURLOPT_PROXY, $proxy);
-					}
-					else
-					{
-						curl_setopt($fp, CURLOPT_PROXY, '');
-					}
-				}
+				// added by FoF (vitalif@yourcmc.ru) to enable environment proxy settings support
+				// fucking cURL doesn't support this by default
+				curl_set_env_proxy($fp, $url);
 				curl_setopt($fp, CURLOPT_URL, $url);
 				curl_setopt($fp, CURLOPT_HEADER, 1);
 				curl_setopt($fp, CURLOPT_RETURNTRANSFER, 1);
@@ -7752,7 +7706,7 @@ class SimplePie_File
 					curl_setopt($fp, CURLOPT_FOLLOWLOCATION, 1);
 					curl_setopt($fp, CURLOPT_MAXREDIRS, $redirects);
 				}
-                
+
 				// added by FoF to enable https and digest authentication
 				curl_setopt($fp, CURLOPT_SSL_VERIFYPEER, false);
 				curl_setopt($fp, CURLOPT_HTTPAUTH, CURLAUTH_ANY);
