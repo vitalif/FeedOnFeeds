@@ -45,7 +45,7 @@
 
 /* added by FoF (vitalif@yourcmc.ru) to enable environment proxy settings support */
 /* fucking cURL doesn't support this by default */
-require_once('../curl-env-proxy.php');
+require_once(dirname(dirname(__FILE__)).'/curl-env-proxy.php');
 
 /**
  * SimplePie Name
