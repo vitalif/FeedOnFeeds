@@ -96,6 +96,7 @@ function fof_render_item($item)
 			onclick='return checkbox(event);'
 			title='shift-click or double-click to flag all items up to this one'
 		/>
+		<img src="image/flagall.gif" class="flagall" onclick='flag_upto("c<?= $item_id ?>")' title='flag all items up to this one' />
 	</span>
 	
 	<h1 <?php if($unread) echo "class='unread-item'" ?> >

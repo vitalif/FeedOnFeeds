@@ -604,13 +604,15 @@ function completeDrag(e)
 function hide_all()
 {
     items = document.getElementsByClassName("item", "items");
-    items.each( function(e) { e.className = "item hidden"; });
+    for (var i = 0; i < items.length; i++)
+        items[i].className = "item hidden";
 }
 
 function show_all()
 {
     items = document.getElementsByClassName("item", "items");
-    items.each( function(e) { e.className = "item shown"; });
+    for (var i = 0; i < items.length; i++)
+        items[i].className = "item shown";
 }
 
 function hide_body(id)
