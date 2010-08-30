@@ -32,13 +32,16 @@ $unread_count = fof_get_unread_count(fof_current_user());
 
   <link rel="stylesheet" href="fof.css" media="screen" />
   <link rel="stylesheet" href="fof-mobile.css" media="handheld" />
+  <link rel="stylesheet" href=<?="\"fof-css.php?width=$width\""?> media="screen" />
 
   <script src="prototype/prototype.js" type="text/javascript"></script>
   <script src="fof.js" type="text/javascript"></script>
-  <script src="mediatypechecker.js" type="text/javascript"></script>
 
   <!--[if IE]>
   <script>window.isIE = true;</script>
+  <style>
+    #sidebar table { width: <?=($width-20)?>px; }
+  </style>
   <![endif]-->
 
   <script>
@@ -47,20 +50,6 @@ $unread_count = fof_get_unread_count(fof_current_user());
   <?php if($fof_prefs_obj->get('keyboard')) { ?>
     document.onkeypress = keyboard;
   <?php } ?>
-    var isMobile = IsMediaType('handheld') > 0;
-    var sidebarWidth = <?=$width?>;
-    if (!isMobile)
-    {
-      document.getElementById('sidebar').style.width = sidebarWidth+'px';
-      document.getElementById('handle').style.left = sidebarWidth+'px';
-      document.getElementById('items').style.marginLeft = (sidebarWidth+20)+'px';
-      document.getElementById('item-display-controls').style.left = (sidebarWidth+10)+'px';
-      if (isIE)
-      {
-        document.getElementById('taglist').style.width = (sidebarWidth-20)+'px';
-        document.getElementById('feedlisttable').style.width = (sidebarWidth-20)+'px';
-      }
-    }
   </script>
 
 </head>
