@@ -1,0 +1,5 @@
+#welcome, #addupd, #nav, #nav li, #tags, #taglist, #taglist tr, #taglist td { display: inline; }
+#taglist td { margin: 0 4px; }
+#feeds { display: none; }
+#sidebar { display: block; float: none; width: auto !important; height: auto !important; overflow: visible; position: static; }
+#handle { display: none; }
