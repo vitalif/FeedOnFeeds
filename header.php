@@ -47,11 +47,11 @@ $unread_count = fof_get_unread_count(fof_current_user());
   <?php if($fof_prefs_obj->get('keyboard')) { ?>
     document.onkeypress = keyboard;
   <?php } ?>
-    var isMobile = IsMediaType('handheld');
+    var isMobile = IsMediaType('handheld') > 0;
     var sidebarWidth = <?=$width?>;
     if (!isMobile)
     {
-      document.getElementById('width').style.width = sidebarWidth+'px';
+      document.getElementById('sidebar').style.width = sidebarWidth+'px';
       document.getElementById('handle').style.left = sidebarWidth+'px';
       document.getElementById('items').style.marginLeft = (sidebarWidth+20)+'px';
       document.getElementById('item-display-controls').style.left = (sidebarWidth+10)+'px';
