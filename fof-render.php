@@ -105,6 +105,9 @@ function fof_render_item($item)
 			width="16"
 			src="<?php echo $star_image ?>"
 			id="fav<?php echo $item_id ?>"
+			alt="<?= $star ? "✦" : "✧" ?>"
+			class="star"
+			style="<?= $star ? " color: #c00000;" : "" ?>"
 			onclick="return toggle_favorite('<?php echo $item_id ?>')"
 		/>
 		<script>

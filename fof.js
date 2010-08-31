@@ -773,6 +773,8 @@ function toggle_favorite(id)
         var complete = function()
 		{
 			image.src='image/star-off.gif';
+			image.alt='✧';
+			image.style.color = '';
 			image.star = false;
 			starred--;
 			if(starred)
@@ -791,6 +793,8 @@ function toggle_favorite(id)
         var complete = function()
 		{
 			image.src='image/star-on.gif';
+			image.alt='✦';
+			image.style.color = '#c00000';
 			image.star = true;
 			starred++;
 			if(starred)
