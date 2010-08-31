@@ -1,11 +1,11 @@
-#addupd, #nav, #tags, #taglist { display: inline; font-size: 100%; }
-#welcome, #item-display-controls, #nav li, #taglist tr, #sidebar { display: block; }
+#addupd, #nav, #tags { display: inline; font-size: 100%; }
+#taglist, #welcome, #item-display-controls, #nav li, #taglist tr, #sidebar { display: block; }
 #item-display-controls-spacer, #taglist tr.heading, #feeds { display: none; }
 #welcome { text-align: left; }
 #addupd { float: left; margin: 4px 8px 4px 4px; }
 #nav li { float: left; margin: 4px 8px 4px 0; }
 #taglist { clear: both; }
-#taglist tr { background-color: #f0f0f0; margin: 4px 4px 0 0; padding: 2px 0; float: left; }
+#taglist tr { background-color: #e0e0e0; margin: 4px 4px 0 0; padding: 2px 0; float: left; }
 #taglist td { margin: 0 4px; display: inline; background-color: transparent; }
 #sidebar { float: none; width: auto !important; height: auto !important; overflow: visible; position: static; }
 #handle { display: none; }
