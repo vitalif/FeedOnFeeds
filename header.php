@@ -32,7 +32,7 @@ $unread_count = fof_get_unread_count(fof_current_user());
 
   <link rel="stylesheet" type="text/css" href="fof.css" media="screen" />
   <link rel="stylesheet" type="text/css" href="fof-mobile.css" media="handheld" />
-  <link rel="stylesheet" type="text/css" href="fof-mobile.css" media="only screen and (max-device-width: 600px)" />-->
+  <link rel="stylesheet" type="text/css" href="fof-mobile.css" media="only screen and (max-device-width: 600px)" />
 
   <script src="prototype/prototype.js" type="text/javascript"></script>
   <script src="fof.js" type="text/javascript"></script>
