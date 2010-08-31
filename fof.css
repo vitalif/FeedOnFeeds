@@ -281,7 +281,7 @@ body
 #welcome
 {
 text-align: center;
-font: normal 10px sans-serif;
+font: normal 10px Verdana;
 background: #ddd;
 border-bottom: 1px solid #666;
 padding: 5px 7px;
@@ -295,7 +295,7 @@ img.star-on { background-color: red; }
 
 #item-display-controls
 {
-font: normal 10px sans-serif;
+font: normal 10px Verdana;
 position: fixed;
 top: 0;
 left: 0;
