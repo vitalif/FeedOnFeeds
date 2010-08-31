@@ -11,3 +11,4 @@
 #handle { display: none; }
 #item-display-controls { position: static; clear: both; }
 .odd-row { background: transparent; }
+.items-title { margin-top: 0; }

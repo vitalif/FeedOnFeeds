@@ -307,7 +307,7 @@ border-bottom: 1px solid #666;
 z-index: 1;
 }
 
-.items-title { clear: both; }
+.items-title { clear: both; margin-top: 40px; }
 
 #item-display-controls li { padding: 5px 4px; }
 #item-display-controls li a { padding: 0; }
