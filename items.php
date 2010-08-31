@@ -38,9 +38,7 @@ $howmany = $_GET['howmany'];
 $title = fof_view_title($_GET['feed'], $what, $_GET['when'], $which, $_GET['howmany'], $_GET['search']);
 $noedit = $_GET['noedit'];
 
-?>
-
-<ul id="item-display-controls-spacer" class="inline-list">
+/* WTF???? <ul id="item-display-controls-spacer" class="inline-list">
 	<li class="orderby">[new to old]</li>
 	<li class="orderby">[old to new]</li>
 	<li><a href="javascript:flag_all();mark_read()"><strong>Mark all read</strong></a></li>
@@ -51,12 +49,11 @@ $noedit = $_GET['noedit'];
 	<li><a href="javascript:mark_unread()">Mark flagged unread</a></li>
 	<li><a href="javascript:show_all()">Show all</a></li>
 	<li><a href="javascript:hide_all()">Hide all</a></li>
-</ul>
+</ul>*/
 
-<br style="clear: both"><br>
+?>
 
-<p><?php echo $title?></p>
-
+<p class="items-title"><?php echo $title?></p>
 
 <ul id="item-display-controls" class="inline-list">
 	<li class="orderby"><?php

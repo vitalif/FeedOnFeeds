@@ -30,9 +30,9 @@ $unread_count = fof_get_unread_count(fof_current_user());
 
   <title>Feed on Feeds<?php if($unread_count) echo " ($unread_count)";?></title>
 
-  <link rel="stylesheet" href="fof.css" media="screen" />
-  <link rel="stylesheet" href="fof-mobile.css" media="handheld" />
-  <link rel="stylesheet" href=<?="\"fof-css.php?width=$width\""?> media="screen" />
+  <link rel="stylesheet" type="text/css" href="fof.css" media="screen" />
+  <link rel="stylesheet" type="text/css" href="fof-mobile.css" media="handheld" />
+  <link rel="stylesheet" type="text/css" href="fof-mobile.css" media="only screen and (max-device-width: 600px)" />-->
 
   <script src="prototype/prototype.js" type="text/javascript"></script>
   <script src="fof.js" type="text/javascript"></script>
@@ -40,9 +40,18 @@ $unread_count = fof_get_unread_count(fof_current_user());
   <!--[if IE]>
   <script>window.isIE = true;</script>
   <style>
-    #sidebar table { width: <?=($width-20)?>px; }
+    @media screen { #sidebar table { width: <?=($width-20)?>px; } }
   </style>
   <![endif]-->
+
+  <style>
+    @media only screen and (min-device-width: 600px) {
+      #sidebar { width: <?=$width?>px; }
+      #handle { left: <?=$width?>px; }
+      #items { margin-left: <?=($width+20)?>px; }
+      #item-display-controls { left: <?=($width+10)?>px; }
+    }
+  </style>
 
   <script>
     document.onmousemove = dragResize;
