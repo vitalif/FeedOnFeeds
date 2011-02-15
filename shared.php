@@ -16,7 +16,7 @@ $fof_no_login = true;
 include_once("fof-main.php");
 include_once("fof-render.php");
 
-$user = $_GET['user'];
+$user = intval($_GET['user']);
 if(!isset($user)) die;
 
 $format = $_GET['format'];
@@ -28,53 +28,66 @@ if($sharing == "no") die;
 $name = $prefs->get("sharedname");
 $url = $prefs->get("sharedurl");
 
-$which = $sharing;
-
-if(isset($_GET['which']))
+$what = $sharing;
+$extratitle = '';
+if(isset($_GET['what']))
 {
-    $which = ($sharing == "all") ? $_GET['which'] : "$sharing, " . $_GET['which'];
-    $extratitle = " items tagged " . $_GET['which'];
+    $what = ($sharing == "all") ? $_GET['what'] : "$sharing, " . $_GET['what'];
+    $extratitle .= " items tagged " . $_GET['what'];
 }
 
 $feed = NULL;
 if(isset($_GET['feed']))
 {
-    $feed = $_GET['feed'];
+    $feed = intval($_GET['feed']);
     $r = fof_db_get_feed_by_id($feed, fof_current_user());
     $extratitle .= ' from <a href="' . htmlspecialchars($r['feed_link']) . '">' . htmlspecialchars(fof_feed_title($r)) . '</a>';
 }
 
-$result = fof_get_items($user, $feed, $which, NULL, 0, 100);
+$when = NULL;
+if(preg_match('#^\d+/\d+/\d+$#s', $_GET['when']))
+    $when = $_GET['when'];
 
-$shared_feed = "http://" . $_SERVER['SERVER_NAME'] . $_SERVER['PHP_SELF'] . "?user=$user&format=atom";
-$shared_link = "http://" . $_SERVER['SERVER_NAME'] . $_SERVER['PHP_SELF'] . "?user=$user";
+$offset = intval($_GET['offset']);
 
-if(isset($_GET['which']))
+$result = fof_get_items($user, $feed, $what, $when, $offset, 101);
+if (count($result) > 100)
 {
-    $shared_feed .= '&which=' . $_GET['which'];
-    $shared_link .= '&which=' . $_GET['which'];
+    $next = true;
+    array_pop($result);
 }
 
-if(isset($_GET['feed']))
+function lnk($what = NULL, $atom = false, $offset = NULL)
 {
-    $shared_feed .= '&feed=' . $_GET['feed'];
-    $shared_link .= '&feed=' . $_GET['feed'];
+    global $user;
+    $link = "http://" . $_SERVER['SERVER_NAME'] . $_SERVER['PHP_SELF'] . "?user=$user";
+    if (isset($_GET['what']) && $what === NULL)
+        $what = $_GET['what'];
+    if ($what !== NULL)
+        $link .= '&what='.urlencode($what);
+    if ($_GET['feed'])
+        $link .= '&feed='.intval($_GET['feed']);
+    if ($offset > 0)
+        $link .= '&offset='.intval($offset);
+    if ($atom)
+        $link .= '&format=atom';
+    return htmlspecialchars($link);
 }
 
 if($format == "atom")
 {
-header("Content-Type: application/atom+xml; charset=utf-8");
-echo '<?xml version="1.0"?>';
+    header("Content-Type: application/atom+xml; charset=utf-8");
+    print '<?xml version="1.0"?>';
 ?>
 
 <feed xmlns="http://www.w3.org/2005/Atom">
   <title>Feed on Feeds - Shared Items<?php if($name) echo " from $name"; if($extratitle) echo " " . strip_tags($extratitle) ?></title>
-  <updated><?php echo gmdate('Y-m-d\TH:i:s\Z')?></updated>
+  <updated><?= gmdate('Y-m-d\TH:i:s\Z')?></updated>
   <generator uri="http://feedonfeeds.com/">Feed on Feeds</generator>
   <?php if($name) echo "<author><name>$name</name></author>"; ?>
-  <id><?= htmlspecialchars($shared_feed) ?></id>
-  <link href="<?= htmlspecialchars($shared_feed) ?>" rel="self" type="application/atom+xml"/>
-  <link href="<?= htmlspecialchars($shared_link) ?>" rel="alternate"/>
+  <id><?= lnk(NULL, true) ?></id>
+  <link href="<?= lnk(NULL, true) ?>" rel="self" type="application/atom+xml"/>
+  <link href="<?= lnk() ?>" rel="alternate"/>
 
 <?php
 
@@ -88,9 +101,7 @@ foreach($result as $item)
 
     $item_guid = $item['item_guid'];
     if(!ereg("^[a-z0-9\.\+\-]+:", $item_guid))
-    {
         $item_guid = $feed_link . '#' . $item_guid;
-    }
     $item_guid = htmlspecialchars($item_guid);
 
     $item_title = htmlspecialchars($item['item_title']);
@@ -105,16 +116,16 @@ foreach($result as $item)
 ?>
 
   <entry>
-    <id><?php echo $item_guid ?></id>
-    <link href="<?php echo $item_link ?>" rel="alternate" type="text/html"/>
-    <title type="html"><?php echo $item_title ?></title>
-    <summary type="html"><?php echo $item_content ?></summary>
-    <updated><?php echo $item_updated ?></updated>
+    <id><?= $item_guid ?></id>
+    <link href="<?= $item_link ?>" rel="alternate" type="text/html"/>
+    <title type="html"><?= $item_title ?></title>
+    <summary type="html"><?= $item_content ?></summary>
+    <updated><?= $item_updated ?></updated>
     <source>
-      <id><?php echo $feed_link ?></id>
-      <link href="<?php echo $feed_link ?>" rel="alternate" type="text/html"/>
-      <link href="<?php echo $feed_url ?>" rel="self" type="application/atom+xml"/>
-      <title><?php echo $feed_title ?></title>
+      <id><?= $feed_link ?></id>
+      <link href="<?= $feed_link ?>" rel="alternate" type="text/html"/>
+      <link href="<?= $feed_url ?>" rel="self" type="application/atom+xml"/>
+      <title><?= $feed_title ?></title>
     </source>
   </entry>
 <?php
@@ -128,34 +139,47 @@ header("Content-Type: text/html; charset=utf-8");
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 
-   <head>
-      <link rel="alternate" href="<?php echo $shared_feed?>" type="application/atom+xml"/>
-      <title>Feed on Feeds - Shared Items<?php if($name) echo " from $name"; if($extratitle) echo " " . strip_tags($extratitle) ?></title>
-      <link rel="stylesheet" href="fof.css" media="screen" />
-      <style>
-      .box
-      {
-          font-family: georgia;
-          background: #eee;
-          border: 1px solid black;
-          width: 30em;
-          margin: 10px auto 20px;
-          padding: 1em;
-          text-align: center;
-      }
-      </style>
+<head>
+  <link rel="alternate" href="<?= lnk(NULL, true) ?>" type="application/atom+xml"/>
+  <title>Feed on Feeds - Shared Items<?php if($name) echo " from $name"; if($extratitle) echo " " . strip_tags($extratitle) ?></title>
+  <link rel="stylesheet" href="fof.css" media="screen" />
+  <style>
+  .box
+  {
+    font-family: georgia;
+    background: #eee;
+    border: 1px solid black;
+    width: 30em;
+    margin: 10px auto 20px;
+    padding: 1em;
+    text-align: center;
+  }
+  .pages { text-align: center; }
+  .pages a { margin: 0.5em; }
+  </style>
+</head>
 
-   </head>
+<body>
 
-  <body>
+<h1 class="box">
+  <a href="http://feedonfeeds.com/">Feed on Feeds</a> - Shared Items
+  <?php if($name) { ?>
+    from <a href="<?= lnk() ?>"><?= $name ?></a>
+      <?php if($url) { ?>
+        <a href="<?= $url ?>"><img src="image/external.png" width="10" height="10" /></a>
+      <?php } ?>
+    <?= $extratitle ? "<br><i>$extratitle</i>" : "" ?>
+  <?php } ?>
+</h1>
 
-  <h1 class="box"><a href="http://feedonfeeds.com/">Feed on Feeds</a> - Shared Items
-  <?php if($name) echo " from ";
-  if($url) echo "<a href='$url'>";
-  if($name) echo "$name";
-  if($url) echo "</a>";
-  if($extratitle) echo "<br><i>$extratitle</i>" ?>
- </h1>
+<div class="pages">
+  <?php if($offset) { ?>
+    <a href="<?= lnk(NULL, false, max($offset-100, 0)) ?>">newer items</a>
+  <?php } if($next) { ?>
+    <a href="<?= lnk(NULL, false, $offset+100) ?>">earlier items</a>
+  <?php } ?>
+</div>
+
 <div id="items">
 
 <?php
@@ -187,38 +211,35 @@ foreach($result as $item)
 ?>
 
 <div class="header">
-    <h1>
-        <a href="<?php echo $item_link ?>">
-            <?php echo $item_title ?>
-        </a>
-    </h1>
-
-    <span class='dash'> - </span>
-
-    <h2>
-
+  <h1>
+    <?php if($item_link) { ?>
+      <a href="<?=htmlspecialchars($item_link)?>"><?= $item_title ?></a>
+    <?php } else { ?>
+      <?= $item_title ?>
+    <?php } ?>
+  </h1>
+  <span class='dash'> - </span>
+  <h2>
     <a href="<?=htmlspecialchars($feed_link)?>" title="<?=htmlspecialchars($feed_description)?>"><img src="<?=htmlspecialchars($feed_image)?>" height="16" width="16" border="0" /></a>
     <a href="<?=htmlspecialchars($feed_link)?>" title="<?=htmlspecialchars($feed_description)?>"><?=htmlspecialchars($feed_title)?></a>
-
-    </h2>
-
-    <span class="meta">on <?php echo $item_published ?> GMT</span>
+  </h2>
+  <span class="tags">
+    <?php foreach($item['tags'] as $t) {
+      if (!preg_match('#\b'.str_replace('#', '\\#', preg_quote($t)).'\b#', $sharing)) { ?>
+        <a href="<?= lnk($t) ?>"><?=htmlspecialchars($t)?></a>
+    <?php } } ?>
+  </span>
+  <span class="meta">on <?= $item_published ?> GMT</span>
 </div>
 
-<div class="body"><?php echo $item_content ?></div>
+<div class="body"><?= $item_content ?></div>
 
 <div class="clearer"></div>
 </div>
 
-<?php
-}
-
-if(count($result) == 0)
-{
-    echo "<p><i>No shared items.</i></p>";
-}
-
-?>
+<?php } if(!$result) { ?>
+<p><i>No shared items.</i></p>
+<?php } ?>
 
 </div></body></html>
 
