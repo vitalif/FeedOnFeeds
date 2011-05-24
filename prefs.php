@@ -172,7 +172,7 @@ if(isset($_POST['changepassword']))
     }
 }
 
-if(isset($_POST['adduser']) && $_POST['username'] && $_POST['password'])
+if(fof_is_admin() && isset($_POST['adduser']) && $_POST['username'] && $_POST['password'])
 {
     $username = $_POST['username'];
     $password = $_POST['password'];
@@ -181,8 +181,7 @@ if(isset($_POST['adduser']) && $_POST['username'] && $_POST['password'])
     $message = "User '$username' added.";
 }
 
-
-if(isset($_POST['deleteuser']) && $_POST['username'])
+if(fof_is_admin() && isset($_POST['deleteuser']) && $_POST['username'])
 {
     $username = $_POST['username'];
 
