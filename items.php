@@ -61,6 +61,7 @@ $noedit = $_GET['noedit'];
 	<li><a href="javascript:mark_unread()">Mark flagged unread</a></li>
 	<li><a href="javascript:show_all()">Show all</a></li>
 	<li><a href="javascript:hide_all()">Hide all</a></li>
+	<li><a href="javascript:delete_flagged(<?= fof_is_admin() ? 1 : 0 ?>)">Delete flagged</a></li>
 </ul>
 
 <!-- close this form to fix first item! -->

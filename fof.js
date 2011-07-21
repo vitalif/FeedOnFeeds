@@ -658,7 +658,6 @@ function flag_all()
     elements.each( function(e) { e.checked = true; });
 }
 
-
 function toggle_all()
 {
     elements = $A(Form.getInputs('itemform', 'checkbox'));
@@ -670,7 +669,6 @@ function unflag_all()
     elements = $A(Form.getInputs('itemform', 'checkbox'));
     elements.each( function(e) { e.checked = false; });
 }
-
 
 function mark_read()
 {
@@ -684,6 +682,17 @@ function mark_unread()
     document.items['action'].value = 'unread';
     document.items['return'].value = escape(location);
     document.items.submit();
+}
+
+function delete_flagged(is_adm)
+{
+    if (confirm('Are you sure to remove selected items from FeedOnFeeds database?'+
+        (is_adm ? '' : ' Only items from your private feeds can be removed!')))
+    {
+        document.items['action'].value = 'delete';
+        document.items['return'].value = escape(location);
+        document.items.submit();
+    }
 }
 
 function mark_feed_read(id)

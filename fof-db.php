@@ -600,7 +600,7 @@ function fof_db_create_tag($user_id, $tag)
 
 function fof_db_get_tag_by_name($user_id, $tag)
 {
-    global $FOF_TAG_TABLE, $FOF_ITEM_TABLE, $FOF_ITEM_TAG_TABLE, $fof_connection;
+    global $FOF_TAG_TABLE, $FOF_ITEM_TABLE, $FOF_ITEM_TAG_TABLE;
 
     $result = fof_safe_query("select $FOF_TAG_TABLE.tag_id from $FOF_TAG_TABLE where $FOF_TAG_TABLE.tag_name = '%s'", $tag);
 
@@ -624,16 +624,36 @@ function fof_db_mark_read($user_id, $items)
     fof_db_untag_items($user_id, 1, $items);
 }
 
+function fof_db_delete_items($user_id, $items, $check_private)
+{
+    global $FOF_ITEM_TABLE, $FOF_SUBSCRIPTION_TABLE;
+    if (!$items)
+        return;
+    if ($check_private)
+    {
+        // Check if items correspond to $user_id's private feed
+        $result = fof_db_query(
+            "SELECT i.item_id FROM $FOF_ITEM_TABLE i".
+            " LEFT JOIN $FOF_SUBSCRIPTION_TABLE s ON s.feed_id=i.feed_id AND s.user_id != $user_id".
+            " WHERE s.feed_id IS NULL AND i.item_id IN (".implode(',', array_map('intval', $items)).")"
+        );
+        $items = array();
+        foreach ($result as $r)
+            $items[] = $r['item_id'];
+    }
+    if (!$items)
+        return;
+    $items = implode(',', array_map('intval', $items));
+    fof_db_query("DELETE FROM $FOF_ITEM_TABLE WHERE item_id IN ($items)");
+}
+
 function fof_db_mark_feed_read($user_id, $feed_id)
 {
     global $FOF_ITEM_TAG_TABLE;
 
     $result = fof_db_get_items($user_id, $feed_id, $what="all");
-
-    foreach($result as $r)
-    {
+    foreach ($result as $r)
         $items[] = $r['item_id'];
-    }
 
     fof_db_untag_items($user_id, 1, $items);
 }
@@ -665,43 +685,36 @@ function fof_db_mark_item_unread($users, $id)
 {
     global $FOF_ITEM_TAG_TABLE;
 
-    if(count($users) == 0) return;
+    if (!$users)
+        return;
 
+    $sql = array();
     foreach($users as $user)
-    {
         $sql[] = sprintf("(%d, 1, %d)", $user, $id);
-    }
+    $values = implode(",", $sql);
 
-    $values = implode ( ",", $sql );
-
-    $sql = "insert into $FOF_ITEM_TAG_TABLE (user_id, tag_id, item_id) values " . $values;
-
+    $sql = "insert into $FOF_ITEM_TAG_TABLE (user_id, tag_id, item_id)".
+        " values $values on duplicate key update item_id=item_id";
     $result = fof_db_query($sql, 1);
-
-    if(!$result && (mysql_errno() != 1062))
+    if (!$result)
         fof_die_mysql_error("Cannot run query '$sql': ".mysql_errno().": ".mysql_error());
 }
 
 function fof_db_tag_items($user_id, $tag_id, $items)
 {
     global $FOF_ITEM_TAG_TABLE;
-
-    if(!$items) return;
-
-    if(!is_array($items)) $items = array($items);
+    if (!$items)
+        return;
+    if (!is_array($items))
+        $items = array($items);
 
     foreach($items as $item)
-    {
         $sql[] = sprintf("(%d, %d, %d)", $user_id, $tag_id, $item);
-    }
-
-    $values = implode ( ",", $sql );
-
-    $sql = "insert into $FOF_ITEM_TAG_TABLE (user_id, tag_id, item_id) values " . $values;
+    $values = implode(",", $sql);
+    $sql = "insert into $FOF_ITEM_TAG_TABLE (user_id, tag_id, item_id) values $values on duplicate key update item_id=item_id";
 
     $result = fof_db_query($sql, 1);
-
-    if(!$result && (mysql_errno() != 1062))
+    if (!$result)
         fof_die_mysql_error("Cannot run query '$sql': ".mysql_errno().": ".mysql_error());
 }
 
@@ -709,26 +722,19 @@ function fof_db_untag_items($user_id, $tag_id, $items)
 {
     global $FOF_ITEM_TAG_TABLE;
 
-    if(!$items) return;
+    if(!$items)
+        return;
+    if(!is_array($items))
+        $items = array($items);
 
-    if(!is_array($items)) $items = array($items);
-
-    foreach($items as $item)
-    {
-        $sql[] = " item_id = %d ";
-        $args[] = $item;
-    }
-
-    $values = implode ( " or ", $sql );
-
-    $sql = "delete from $FOF_ITEM_TAG_TABLE where user_id = %d and tag_id = %d and ( $values )";
+    $sql = "item_id IN (".implode(",", array_map('intval', $items)).")";
+    $sql = "delete from $FOF_ITEM_TAG_TABLE where user_id = %d and tag_id = %d and $sql";
 
     array_unshift($args, $tag_id);
     array_unshift($args, $user_id);
 
     fof_safe_query($sql, $args);
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // User stuff
