@@ -730,10 +730,7 @@ function fof_db_untag_items($user_id, $tag_id, $items)
     $sql = "item_id IN (".implode(",", array_map('intval', $items)).")";
     $sql = "delete from $FOF_ITEM_TAG_TABLE where user_id = %d and tag_id = %d and $sql";
 
-    array_unshift($args, $tag_id);
-    array_unshift($args, $user_id);
-
-    fof_safe_query($sql, $args);
+    fof_safe_query($sql, array($user_id, $tag_id));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
