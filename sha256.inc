@@ -410,4 +410,21 @@ if (!function_exists('hash'))
     }
 }
 
+/* Bugzilla password hashing */
+function bz_crypt($password, $salt)
+{
+    $algorithm = '';
+    if (preg_match('/{([^}]+)}$/', $salt, $m))
+        $algorithm = $m[1];
+
+    if (!$algorithm)
+        return crypt($password, $salt);
+    elseif (strtolower($algorithm) == 'sha-256')
+    {
+        $salt = substr($salt, 0, 8);
+        return $salt . substr(base64_encode(pack('H*',sha256($password . $salt))), 0, -1) . '{' . $algorithm . '}';
+    }
+    return NULL;
+}
+
 ?>

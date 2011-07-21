@@ -57,4 +57,3 @@ fof_db_optimize();
 fof_log("=== update complete ===", "update");
 
 ob_end_clean();
-?>

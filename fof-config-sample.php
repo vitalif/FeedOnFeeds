@@ -21,6 +21,8 @@ define('FOF_DB_PASS', "password");
 define('FOF_DB_DBNAME', "database");
 define('FOF_DB_CHARSET', "utf8");
 
+// URL to Global Auth server
+//define('FOF_GLOBALAUTH_URL', '');
 
 // The rest you should not need to change
 
@@ -35,7 +37,6 @@ define('FOF_SUBSCRIPTION_TABLE', FOF_DB_PREFIX . "subscription");
 define('FOF_TAG_TABLE', FOF_DB_PREFIX . "tag");
 define('FOF_USER_TABLE', FOF_DB_PREFIX . "user");
 
-
 // Find ourselves and the cache dir
 
 if (!defined('DIR_SEP')) {
@@ -45,5 +46,3 @@ if (!defined('DIR_SEP')) {
 if (!defined('FOF_DIR')) {
     define('FOF_DIR', dirname(__FILE__) . DIR_SEP);
 }
-
-?>

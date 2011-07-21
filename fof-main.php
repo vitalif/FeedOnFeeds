@@ -23,6 +23,8 @@ if ( !file_exists( dirname(__FILE__) . '/fof-config.php') )
 require_once("fof-config.php");
 require_once("fof-db.php");
 require_once("classes/fof-prefs.php");
+#if (file_exists(dirname(__FILE__).'/login-external.php'))
+#    require_once(dirname(__FILE__).'/login-external.php');
 
 fof_db_connect();
 
@@ -44,7 +46,7 @@ if(!$fof_installer)
     ob_end_clean();
 }
 
-require_once('simplepie/simplepie.inc');
+require_once('simplepie/simplepie.php');
 
 function fof_set_content_type()
 {
@@ -78,19 +80,18 @@ function fof_log($message, $topic="debug")
 
 function require_user()
 {
-    if(!isset($_COOKIE["user_name"]) || !isset($_COOKIE["user_password_hash"]))
-    {
-        Header("Location: login.php");
-        exit();
-    }
-
+    // FIXME Пилять! Да это же по безопасности, как HTTP Basic авторизация! :-(
     $user_name = $_COOKIE["user_name"];
     $user_password_hash = $_COOKIE["user_password_hash"];
 
-    if(!fof_authenticate($user_name, $user_password_hash))
+    if (!$user_name || !$user_password_hash || !fof_authenticate($user_name, $user_password_hash))
     {
-        Header("Location: login.php");
-        exit();
+        if (function_exists('fof_require_user_hook') &&
+            !fof_require_user_hook())
+        {
+            header("Location: login.php");
+            exit;
+        }
     }
 }
 
@@ -110,6 +111,7 @@ function fof_logout()
 {
     setcookie ( "user_name", "", time() );
     setcookie ( "user_password_hash", "", time() );
+    setcookie ( "logged_out", "1", time() + 300 );
 }
 
 function fof_current_user()
@@ -629,11 +631,11 @@ function fof_subscribe($user_id, $url, $unread="today")
         return '<font color="green"><b>Subscribed.</b></font><!-- '.$feed['feed_id'].' --><br>';
     }
 
-    $rss = fof_parse($url);
+    $rss = fof_parse($url, $user_id);
 
     if (isset($rss->error))
     {
-        return "Error: <B>" . $rss->error . "</b> <a href=\"http://feedvalidator.org/check?url=$url\">try to validate it?</a><br>";
+        return "Error: <b>" . $rss->error . "</b><br />";
     }
     else
     {
@@ -708,12 +710,28 @@ function fof_mark_item_unread($feed_id, $id, $filtered = array())
     fof_db_mark_item_unread($users, $id);
 }
 
-function fof_parse($url)
+function fof_generate_sudo_id()
 {
-    $p =& FoF_Prefs::instance();
+    global $fof_sudo_id_user;
+    $sudo_id = unpack('H*', urandom(16));
+    $sudo_id = $sudo_id[1];
+    fof_cache_set("sudo-$sudo_id", $fof_sudo_id_user, 30);
+    return "fof_sudo_id=$sudo_id";
+}
+
+function fof_parse($url, $as_user = NULL)
+{
+    $p = FoF_Prefs::instance();
     $admin_prefs = $p->admin_prefs;
 
     $pie = new SimplePie();
+    /* Bug 63447 - Allow FoF to securely pass user authorization without verification */
+    if (!is_null($as_user) && strpos($url, "fof_sudo") !== false)
+    {
+        global $fof_sudo_id_user;
+        $fof_sudo_id_user = $as_user;
+        $pie->headers['Cookie'] = new SimplePie_Callback('fof_generate_sudo_id');
+    }
     $pie->set_cache_duration($admin_prefs["manualtimeout"] * 60);
     $pie->set_favicon_handler("favicon.php");
     $pie->set_feed_url($url);
@@ -758,9 +776,12 @@ function rss_feed_title($rss)
     return html_entity_decode(strip_tags($rss->get_title()), ENT_QUOTES);
 }
 
-function fof_update_feed($id)
+function fof_update_feed($id, $as_user = NULL)
 {
     if(!$id) return 0;
+
+    if($as_user === NULL)
+        $as_user = fof_db_get_feed_single_user($id);
 
     $feed = fof_db_get_feed_by_id($id);
     $url = $feed['feed_url'];
@@ -768,12 +789,12 @@ function fof_update_feed($id)
 
     fof_db_feed_mark_attempted_cache($id);
 
-    $rss = fof_parse($feed['feed_url']);
+    $rss = fof_parse($feed['feed_url'], $as_user);
 
     if ($rss->error())
     {
         fof_log("feed update failed: " . $rss->error(), "update");
-        return array(0, "Error: <b>" . $rss->error() . "</b> <a href=\"http://feedvalidator.org/check?url=$url\">try to validate it?</a>");
+        return array(0, "Error: <b>" . $rss->error() . "</b>");
     }
 
     $sub = html_entity_decode($rss->subscribe_url(), ENT_QUOTES);
@@ -1082,6 +1103,8 @@ function fof_todays_date()
 {
     $prefs = fof_prefs();
     $offset = $prefs['tzoffset'];
+    if ($prefs['dst'])
+        $offset += date('I');
 
     return gmdate( "Y/m/d", time() + ($offset * 60 * 60) );
 }
@@ -1126,5 +1149,3 @@ if(!function_exists('str_ireplace'))
         return preg_replace("/".$search."/i", $replace, $subject);
     }
 }
-
-?>

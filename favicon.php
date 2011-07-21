@@ -11,7 +11,7 @@
  * Distributed under the GPL - see LICENSE
  *
  */
-require_once('simplepie/simplepie.inc');
+require_once('simplepie/simplepie.php');
 
 if(file_exists("./cache/" . $_GET[i] . ".spi"))
 {
@@ -21,4 +21,3 @@ else
 {
     header("Location: image/feed-icon.png");
 }
-?>

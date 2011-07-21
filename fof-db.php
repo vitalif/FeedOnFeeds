@@ -4,12 +4,10 @@
  *
  * fof-db.php - (nearly) all of the DB specific code
  *
- *
  * Copyright (C) 2004-2007 Stephen Minutillo
  * steve@minutillo.com - http://minutillo.com/steve/
  *
  * Distributed under the GPL - see LICENSE
- *
  */
 
 $FOF_FEED_TABLE = FOF_FEED_TABLE;
@@ -60,7 +58,7 @@ function fof_db_query($sql, $live=0)
     $result = mysql_query($sql, $fof_connection);
 
     if(is_resource($result)) $num = mysql_num_rows($result);
-    if($result) $affected = mysql_affected_rows();
+    if($result) $affected = mysql_affected_rows($fof_connection);
 
     list($usec, $sec) = explode(" ", microtime());
     $t2 = (float)$sec + (float)$usec;
@@ -74,8 +72,8 @@ function fof_db_query($sql, $live=0)
     }
     else
     {
-        if(mysql_errno())
-            fof_die_mysql_error("Cannot run query '$sql': ".mysql_errno().": ".mysql_error());
+        if(mysql_errno($fof_connection))
+            fof_die_mysql_error("Cannot run query '$sql': ".mysql_errno($fof_connection).": ".mysql_error($fof_connection));
         return $result;
     }
 }
@@ -88,8 +86,8 @@ function fof_die_mysql_error($error)
     ob_end_clean();
     $error .= "\n".$trace;
     fof_log($error, 'error');
-    $error = "SQL error. Have you run <a href=\"install.php\"><code>install.php</code></a> to create or upgrade your installation?\n$error";
-    die(str_replace("\n", "<br>", $error));
+    $error = "SQL error. Have you run <a href=\"install.php\"><code>install.php</code></a> to create or upgrade your installation?\n<pre>$error</pre>";
+    die($error);
 }
 
 function fof_db_get_row($result)
@@ -338,6 +336,8 @@ function fof_db_get_items($user_id = 1, $feed = NULL, $what = "unread",
     $user_id = intval($user_id);
     $prefs = fof_prefs();
     $offset = $prefs['tzoffset'];
+    if ($prefs['dst'])
+        $offset += date('I');
 
     if (!is_null($when) && $when != "")
     {
@@ -771,13 +771,33 @@ function fof_db_change_password($username, $password)
     fof_safe_query("update $FOF_USER_TABLE set user_password_hash = '%s' where user_name = '%s'", $password_hash, $username);
 }
 
-function fof_db_get_user_id($username)
+function fof_db_get_user($username, $userid = NULL)
 {
     global $FOF_USER_TABLE;
-    $result = fof_safe_query("select user_id from $FOF_USER_TABLE where user_name = '%s'", $username);
+    if ($username === NULL)
+        $result = fof_safe_query("select * from $FOF_USER_TABLE where user_id = %d", $userid);
+    else
+        $result = fof_safe_query("select * from $FOF_USER_TABLE where user_name = '%s'", $username);
     $row = mysql_fetch_array($result);
+    return $row;
+}
 
-    return $row['user_id'];
+function fof_update_user($user)
+{
+    global $FOF_USER_TABLE;
+    if (!$user || !$user['user_id'])
+        return;
+    $values = array();
+    $query = "";
+    foreach (array('user_name', 'user_password_hash', 'user_level', 'user_prefs') as $k)
+    {
+        $query .= ($query ? ", " : "") . "`$k`='%s'";
+        $values[] = $user[$k];
+    }
+    $query = "UPDATE $FOF_USER_TABLE SET $query WHERE user_id='%s'";
+    $values[] = $user['user_id'];
+    array_unshift($values, $query);
+    call_user_func_array('fof_safe_query', $values);
 }
 
 function fof_db_delete_user($username)
@@ -799,9 +819,18 @@ function fof_db_save_prefs($user_id, $prefs)
     fof_safe_query("update $FOF_USER_TABLE set user_prefs = '%s' where user_id = %d", $prefs, $user_id);
 }
 
+function fof_set_current_user($row)
+{
+    global $fof_user_id, $fof_user_name, $fof_user_level;
+    $fof_user_name = $row['user_name'];
+    $fof_user_id = $row['user_id'];
+    $fof_user_level = $row['user_level'];
+    return true;
+}
+
 function fof_db_authenticate($user_name, $user_password_hash)
 {
-    global $FOF_USER_TABLE, $FOF_ITEM_TABLE, $FOF_ITEM_TAG_TABLE, $fof_connection, $fof_user_id, $fof_user_name, $fof_user_level;
+    global $FOF_USER_TABLE, $FOF_ITEM_TABLE, $FOF_ITEM_TAG_TABLE;
 
     $result = fof_safe_query("select * from $FOF_USER_TABLE where user_name = '%s' and user_password_hash = '%s'", $user_name, $user_password_hash);
 
@@ -810,9 +839,7 @@ function fof_db_authenticate($user_name, $user_password_hash)
 
     $row = mysql_fetch_array($result);
 
-    $fof_user_name = $row['user_name'];
-    $fof_user_id = $row['user_id'];
-    $fof_user_level = $row['user_level'];
+    fof_set_current_user($row);
 
     return true;
 }
@@ -859,7 +886,7 @@ function fof_db_get_top_readers($days, $count = NULL)
  join $FOF_SUBSCRIPTION_TABLE s on s.user_id=u.user_id
  join $FOF_ITEM_TABLE i on i.feed_id=s.feed_id
  join $FOF_TAG_TABLE t on t.tag_name='unread'
- left join $FOF_ITEM_TAG_TABLE ti on ti.tag_id=t.tag_id and ti.item_id=i.item_id
+ left join $FOF_ITEM_TAG_TABLE ti on ti.tag_id=t.tag_id and ti.item_id=i.item_id and ti.user_id=u.user_id
  where i.item_published > ".(time()-intval($days*86400))." and ti.tag_id is null
  group by u.user_id order by posts desc
  ".(!is_null($count) ? "limit $count" : ""));
@@ -884,4 +911,58 @@ function fof_db_get_most_popular_feeds($count = NULL)
     return $feeds;
 }
 
-?>
+function fof_db_get_feed_single_user($id)
+{
+    global $FOF_SUBSCRIPTION_TABLE;
+    $result = fof_safe_query("SELECT user_id, COUNT(user_id) FROM $FOF_SUBSCRIPTION_TABLE WHERE feed_id=%d GROUP BY feed_id", $id);
+    $row = mysql_fetch_row($result);
+    if (!$row || $row[1] > 1)
+        return NULL;
+    return $row[0];
+}
+
+function fof_cache_fn($key)
+{
+    if (preg_match('/[^a-z0-9_\-]/', $key))
+        $key = 'md5_'.md5($key);
+    return dirname(__FILE__).'/cache/'.$key;
+}
+
+function fof_cache_get($key)
+{
+    $file = fof_cache_fn($key);
+
+    $fp = @fopen($file, "rb");
+    if (!$fp)
+        return NULL;
+
+    $expire = intval(fgets($fp));
+    $value = fread($fp, 1048576);
+    fclose($fp);
+
+    if (time() > $expire)
+    {
+        fof_cache_unset($key);
+        return NULL;
+    }
+
+    return $value;
+}
+
+function fof_cache_set($key, $value, $ttl = 86400)
+{
+    $file = fof_cache_fn($key);
+    if ($fp = fopen($file, "wb"))
+    {
+        fwrite($fp, (time()+$ttl)."\n".$value);
+        fclose($fp);
+        return true;
+    }
+    return false;
+}
+
+function fof_cache_unset($key)
+{
+    $file = fof_cache_fn($key);
+    @unlink($file);
+}

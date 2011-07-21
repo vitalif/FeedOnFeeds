@@ -61,6 +61,8 @@ function fof_render_item($item)
 
 	$prefs = fof_prefs();
 	$offset = $prefs['tzoffset'];
+	if ($prefs['dst'])
+		$offset += date('I');
 
 	$item_published = gmdate("Y-n-d g:ia", $item['item_published'] + $offset*60*60);
 	$item_cached = gmdate("Y-n-d g:ia", $item['item_cached'] + $offset*60*60);
