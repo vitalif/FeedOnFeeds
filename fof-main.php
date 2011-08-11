@@ -86,7 +86,7 @@ function require_user()
 
     if (!$user_name || !$user_password_hash || !fof_authenticate($user_name, $user_password_hash))
     {
-        if (function_exists('fof_require_user_hook') &&
+        if (!function_exists('fof_require_user_hook') ||
             !fof_require_user_hook())
         {
             header("Location: login.php");
