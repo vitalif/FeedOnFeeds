@@ -90,8 +90,8 @@ When adding feeds, mark <select name="unread"><option value=today <?= $unread ==
 <h1>Enter URL manually</h1>
 
 <p>
-Login: <input type="text" name="basic_login" value="<?= htmlspecialchars($login) ?>" /> Password: <input type="password" name="basic_password" value="<?= htmlspecialchars($password) ?>" /> (optional) for password-protected feeds<br>
-RSS or weblog URL: <input type="text" name="rss_url" size="40" value="<?= htmlspecialchars($url) ?>" /> <input name="do" type="Submit" value="Add a feed" /><br>
+RSS or weblog URL: <input type="text" name="rss_url" size="40" value="<?= htmlspecialchars($url) ?>" /> <input name="do" type="Submit" value="Add a feed" /><br />
+Login: <input type="text" name="basic_login" value="<?= htmlspecialchars($login) ?>" /> Password: <input type="password" name="basic_password" value="<?= htmlspecialchars($password) ?>" /> (optional) for password-protected feeds
 </p>
 
 <h1>OPML import</h1>

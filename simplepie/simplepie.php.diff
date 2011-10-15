@@ -1,13 +1,5 @@
-Patch for fucking SimplePie feed parser.
-* Change timeout to 60
-* Strip less HTML
-* Remove =&
-* Pass additional HTTP headers
-* Env proxy support (through curl-env-proxy.php), SSL, HTTP basic auth
-* Allow file:///// links
-
---- simplepie.php	2011-06-28 21:06:45.000000000 +0400
-+++ simplepie.php	2011-06-28 21:05:59.000000000 +0400
+--- simplepie.php	2011-10-16 03:06:55.785282901 +0400
++++ simplepie.php	2011-10-16 02:14:13.797281143 +0400
 @@ -43,6 +43,10 @@
   * @todo phpDoc comments
   */
@@ -830,13 +822,15 @@ Patch for fucking SimplePie feed parser.
  			$parsed = SimplePie_Misc::parse_url($url);
  			$url = SimplePie_Misc::compress_parse_url($parsed['scheme'], $idn->encode($parsed['authority']), $parsed['path'], $parsed['query'], $parsed['fragment']);
  		}
-@@ -7687,6 +7704,13 @@ class SimplePie_File
+@@ -7687,6 +7704,15 @@ class SimplePie_File
  				{
  					curl_setopt($fp, CURLOPT_ENCODING, '');
  				}
 +				if (preg_match('#^([a-z0-9_]+://)(?:([^/]*:[^/]*)@)([^/@]+([/\?].*)?$)#is', $url, $m))
 +				{
-+					$headers2[] = "Authorization: Basic ".base64_encode(urldecode($m[2]));
++					$url = $m[1].$m[3];
++					curl_setopt($fp, CURLOPT_HTTPAUTH, CURLAUTH_ANY);
++					curl_setopt($fp, CURLOPT_USERPWD, urldecode($m[2]));
 +				}
 +				// added by FoF (vitalif@yourcmc.ru) to enable environment proxy settings support
 +				// fucking cURL doesn't support this by default
@@ -844,7 +838,7 @@ Patch for fucking SimplePie feed parser.
  				curl_setopt($fp, CURLOPT_URL, $url);
  				curl_setopt($fp, CURLOPT_HEADER, 1);
  				curl_setopt($fp, CURLOPT_RETURNTRANSFER, 1);
-@@ -7701,6 +7725,10 @@ class SimplePie_File
+@@ -7701,6 +7727,10 @@ class SimplePie_File
  					curl_setopt($fp, CURLOPT_MAXREDIRS, $redirects);
  				}
  
@@ -855,7 +849,7 @@ Patch for fucking SimplePie feed parser.
  				$this->headers = curl_exec($fp);
  				if (curl_errno($fp) === 23 || curl_errno($fp) === 61)
  				{
-@@ -7718,7 +7746,7 @@ class SimplePie_File
+@@ -7718,7 +7748,7 @@ class SimplePie_File
  					curl_close($fp);
  					$this->headers = explode("\r\n\r\n", $this->headers, $info['redirect_count'] + 1);
  					$this->headers = array_pop($this->headers);
@@ -864,7 +858,7 @@ Patch for fucking SimplePie feed parser.
  					if ($parser->parse())
  					{
  						$this->headers = $parser->headers;
-@@ -7799,7 +7827,7 @@ class SimplePie_File
+@@ -7799,7 +7829,7 @@ class SimplePie_File
  					}
  					if (!$info['timed_out'])
  					{
@@ -873,7 +867,7 @@ Patch for fucking SimplePie feed parser.
  						if ($parser->parse())
  						{
  							$this->headers = $parser->headers;
-@@ -7818,7 +7846,7 @@ class SimplePie_File
+@@ -7818,7 +7848,7 @@ class SimplePie_File
  								{
  									case 'gzip':
  									case 'x-gzip':
@@ -882,7 +876,7 @@ Patch for fucking SimplePie feed parser.
  										if (!$decoder->parse())
  										{
  											$this->error = 'Unable to decode HTTP "gzip" stream';
-@@ -8630,7 +8658,7 @@ class SimplePie_Cache
+@@ -8630,7 +8660,7 @@ class SimplePie_Cache
  	 */
  	function create($location, $filename, $extension)
  	{
@@ -891,7 +885,7 @@ Patch for fucking SimplePie feed parser.
  		switch ($location_iri->get_scheme())
  		{
  			case 'mysql':
-@@ -9327,7 +9355,7 @@ class SimplePie_Misc
+@@ -9327,7 +9357,7 @@ class SimplePie_Misc
  
  	function parse_url($url)
  	{
@@ -900,7 +894,7 @@ Patch for fucking SimplePie feed parser.
  		return array(
  			'scheme' => (string) $iri->get_scheme(),
  			'authority' => (string) $iri->get_authority(),
-@@ -9339,7 +9367,7 @@ class SimplePie_Misc
+@@ -9339,7 +9369,7 @@ class SimplePie_Misc
  
  	function compress_parse_url($scheme = '', $authority = '', $path = '', $query = '', $fragment = '')
  	{
@@ -909,7 +903,7 @@ Patch for fucking SimplePie feed parser.
  		$iri->set_scheme($scheme);
  		$iri->set_authority($authority);
  		$iri->set_path($path);
-@@ -9350,7 +9378,7 @@ class SimplePie_Misc
+@@ -9350,7 +9380,7 @@ class SimplePie_Misc
  
  	function normalize_url($url)
  	{
@@ -918,7 +912,7 @@ Patch for fucking SimplePie feed parser.
  		return $iri->get_iri();
  	}
  
-@@ -10870,7 +10898,7 @@ class SimplePie_Misc
+@@ -10870,7 +10900,7 @@ class SimplePie_Misc
  	 */
  	function entities_decode($data)
  	{
@@ -927,7 +921,7 @@ Patch for fucking SimplePie feed parser.
  		return $decoder->parse();
  	}
  
-@@ -11266,7 +11294,7 @@ class SimplePie_Misc
+@@ -11266,7 +11296,7 @@ class SimplePie_Misc
  		{
  			if ($pos = strpos($data, "\x00\x00\x00\x3F\x00\x00\x00\x3E"))
  			{
@@ -936,7 +930,7 @@ Patch for fucking SimplePie feed parser.
  				if ($parser->parse())
  				{
  					$encoding[] = $parser->encoding;
-@@ -11279,7 +11307,7 @@ class SimplePie_Misc
+@@ -11279,7 +11309,7 @@ class SimplePie_Misc
  		{
  			if ($pos = strpos($data, "\x3F\x00\x00\x00\x3E\x00\x00\x00"))
  			{
@@ -945,7 +939,7 @@ Patch for fucking SimplePie feed parser.
  				if ($parser->parse())
  				{
  					$encoding[] = $parser->encoding;
-@@ -11292,7 +11320,7 @@ class SimplePie_Misc
+@@ -11292,7 +11322,7 @@ class SimplePie_Misc
  		{
  			if ($pos = strpos($data, "\x00\x3F\x00\x3E"))
  			{
@@ -954,7 +948,7 @@ Patch for fucking SimplePie feed parser.
  				if ($parser->parse())
  				{
  					$encoding[] = $parser->encoding;
-@@ -11305,7 +11333,7 @@ class SimplePie_Misc
+@@ -11305,7 +11335,7 @@ class SimplePie_Misc
  		{
  			if ($pos = strpos($data, "\x3F\x00\x3E\x00"))
  			{
@@ -963,7 +957,7 @@ Patch for fucking SimplePie feed parser.
  				if ($parser->parse())
  				{
  					$encoding[] = $parser->encoding;
-@@ -11318,7 +11346,7 @@ class SimplePie_Misc
+@@ -11318,7 +11348,7 @@ class SimplePie_Misc
  		{
  			if ($pos = strpos($data, "\x3F\x3E"))
  			{
@@ -972,7 +966,7 @@ Patch for fucking SimplePie feed parser.
  				if ($parser->parse())
  				{
  					$encoding[] = $parser->encoding;
-@@ -11693,7 +11721,7 @@ class SimplePie_IRI
+@@ -11693,7 +11723,7 @@ class SimplePie_IRI
  		$relative = (string) $relative;
  		if ($relative !== '')
  		{
@@ -981,7 +975,7 @@ Patch for fucking SimplePie feed parser.
  			if ($relative->get_scheme() !== null)
  			{
  				$target = $relative;
-@@ -11707,7 +11735,7 @@ class SimplePie_IRI
+@@ -11707,7 +11737,7 @@ class SimplePie_IRI
  				}
  				else
  				{
@@ -990,7 +984,7 @@ Patch for fucking SimplePie feed parser.
  					$target->set_scheme($base->get_scheme());
  					$target->set_userinfo($base->get_userinfo());
  					$target->set_host($base->get_host());
-@@ -11769,11 +11797,7 @@ class SimplePie_IRI
+@@ -11769,11 +11799,7 @@ class SimplePie_IRI
  	 */
  	function parse_iri($iri)
  	{
@@ -1003,7 +997,7 @@ Patch for fucking SimplePie feed parser.
  		return array('scheme' => $match[2], 'authority' => $match[4], 'path' => $match[5], 'query' => $match[7], 'fragment' => $match[9]);
  	}
  
-@@ -12056,7 +12080,7 @@ class SimplePie_IRI
+@@ -12056,7 +12082,7 @@ class SimplePie_IRI
  		}
  		else
  		{
@@ -1012,7 +1006,7 @@ Patch for fucking SimplePie feed parser.
  			$this->valid[__FUNCTION__] = true;
  			return true;
  		}
-@@ -13059,7 +13083,7 @@ class SimplePie_Parse_Date
+@@ -13059,7 +13085,7 @@ class SimplePie_Parse_Date
  		static $object;
  		if (!$object)
  		{
@@ -1021,7 +1015,7 @@ Patch for fucking SimplePie feed parser.
  		}
  		return $object;
  	}
-@@ -14074,6 +14098,7 @@ class SimplePie_Locator
+@@ -14074,6 +14100,7 @@ class SimplePie_Locator
  	var $checked_feeds = 0;
  	var $max_checked_feeds = 10;
  	var $content_type_sniffer_class = 'SimplePie_Content_Type_Sniffer';
@@ -1029,7 +1023,7 @@ Patch for fucking SimplePie feed parser.
  
  	function SimplePie_Locator(&$file, $timeout = 10, $useragent = null, $file_class = 'SimplePie_File', $max_checked_feeds = 10, $content_type_sniffer_class = 'SimplePie_Content_Type_Sniffer')
  	{
-@@ -14094,7 +14119,7 @@ class SimplePie_Locator
+@@ -14094,7 +14121,7 @@ class SimplePie_Locator
  
  		if ($this->file->method & SIMPLEPIE_FILE_SOURCE_REMOTE)
  		{
@@ -1038,7 +1032,7 @@ Patch for fucking SimplePie feed parser.
  			if ($sniffer->get_type() !== 'text/html')
  			{
  				return null;
-@@ -14140,7 +14165,7 @@ class SimplePie_Locator
+@@ -14140,7 +14167,7 @@ class SimplePie_Locator
  	{
  		if ($file->method & SIMPLEPIE_FILE_SOURCE_REMOTE)
  		{
@@ -1047,7 +1041,7 @@ Patch for fucking SimplePie feed parser.
  			$sniffed = $sniffer->get_type();
  			if (in_array($sniffed, array('application/rss+xml', 'application/rdf+xml', 'text/rdf', 'application/atom+xml', 'text/xml', 'application/xml')))
  			{
-@@ -14204,7 +14229,7 @@ class SimplePie_Locator
+@@ -14204,7 +14231,7 @@ class SimplePie_Locator
  				if (!in_array($href, $done) && in_array('feed', $rel) || (in_array('alternate', $rel) && !empty($link['attribs']['type']['data']) && in_array(strtolower(SimplePie_Misc::parse_mime($link['attribs']['type']['data'])), array('application/rss+xml', 'application/atom+xml'))) && !isset($feeds[$href]))
  				{
  					$this->checked_feeds++;
@@ -1056,7 +1050,7 @@ Patch for fucking SimplePie feed parser.
  					if ($feed->success && ($feed->method & SIMPLEPIE_FILE_SOURCE_REMOTE === 0 || ($feed->status_code === 200 || $feed->status_code > 206 && $feed->status_code < 300)) && $this->is_feed($feed))
  					{
  						$feeds[$href] = $feed;
-@@ -14276,7 +14301,7 @@ class SimplePie_Locator
+@@ -14276,7 +14303,7 @@ class SimplePie_Locator
  			if (in_array(strtolower(strrchr($value, '.')), array('.rss', '.rdf', '.atom', '.xml')))
  			{
  				$this->checked_feeds++;
@@ -1065,7 +1059,7 @@ Patch for fucking SimplePie feed parser.
  				if ($feed->success && ($feed->method & SIMPLEPIE_FILE_SOURCE_REMOTE === 0 || ($feed->status_code === 200 || $feed->status_code > 206 && $feed->status_code < 300)) && $this->is_feed($feed))
  				{
  					return $feed;
-@@ -14301,7 +14326,7 @@ class SimplePie_Locator
+@@ -14301,7 +14328,7 @@ class SimplePie_Locator
  			if (preg_match('/(rss|rdf|atom|xml)/i', $value))
  			{
  				$this->checked_feeds++;
@@ -1074,7 +1068,7 @@ Patch for fucking SimplePie feed parser.
  				if ($feed->success && ($feed->method & SIMPLEPIE_FILE_SOURCE_REMOTE === 0 || ($feed->status_code === 200 || $feed->status_code > 206 && $feed->status_code < 300)) && $this->is_feed($feed))
  				{
  					return $feed;
-@@ -14375,7 +14400,7 @@ class SimplePie_Parser
+@@ -14375,7 +14402,7 @@ class SimplePie_Parser
  
  		if (substr($data, 0, 5) === '<?xml' && strspn(substr($data, 5, 1), "\x09\x0A\x0D\x20") && ($pos = strpos($data, '?>')) !== false)
  		{
@@ -1083,7 +1077,7 @@ Patch for fucking SimplePie feed parser.
  			if ($declaration->parse())
  			{
  				$data = substr($data, $pos + 2);
-@@ -14425,7 +14450,7 @@ class SimplePie_Parser
+@@ -14425,7 +14452,7 @@ class SimplePie_Parser
  		else
  		{
  			libxml_clear_errors();
@@ -1092,7 +1086,7 @@ Patch for fucking SimplePie feed parser.
  			$xml->xml($data);
  			while (@$xml->read())
  			{
-@@ -14665,7 +14690,7 @@ class SimplePie_Sanitize
+@@ -14665,7 +14692,7 @@ class SimplePie_Sanitize
  	// Options
  	var $remove_div = true;
  	var $image_handler = '';
@@ -1101,7 +1095,7 @@ Patch for fucking SimplePie feed parser.
  	var $encode_instead_of_strip = false;
  	var $strip_attributes = array('bgsound', 'class', 'expr', 'id', 'style', 'onclick', 'onerror', 'onfinish', 'onmouseover', 'onmouseout', 'onfocus', 'onblur', 'lowsrc', 'dynsrc');
  	var $strip_comments = false;
-@@ -14754,7 +14779,7 @@ class SimplePie_Sanitize
+@@ -14754,7 +14781,7 @@ class SimplePie_Sanitize
  		}
  	}
  
@@ -1110,7 +1104,7 @@ Patch for fucking SimplePie feed parser.
  	{
  		if ($tags)
  		{
-@@ -14911,7 +14936,7 @@ class SimplePie_Sanitize
+@@ -14911,7 +14938,7 @@ class SimplePie_Sanitize
  							}
  							else
  							{

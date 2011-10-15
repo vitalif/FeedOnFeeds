@@ -7706,7 +7706,9 @@ class SimplePie_File
 				}
 				if (preg_match('#^([a-z0-9_]+://)(?:([^/]*:[^/]*)@)([^/@]+([/\?].*)?$)#is', $url, $m))
 				{
-					$headers2[] = "Authorization: Basic ".base64_encode(urldecode($m[2]));
+					$url = $m[1].$m[3];
+					curl_setopt($fp, CURLOPT_HTTPAUTH, CURLAUTH_ANY);
+					curl_setopt($fp, CURLOPT_USERPWD, urldecode($m[2]));
 				}
 				// added by FoF (vitalif@yourcmc.ru) to enable environment proxy settings support
 				// fucking cURL doesn't support this by default
