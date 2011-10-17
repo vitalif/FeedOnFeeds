@@ -577,7 +577,7 @@ function fof_render_feed_link($row)
     $url = $row['feed_url'];
 
     $s = "<b><a href=\"$link\" title=\"$description\">$title</a></b> ";
-    $s .= "<a href=\"$url\">(rss)</a>";
+    $s .= "<a href=\"$url\">(feed)</a>";
 
     return $s;
 }

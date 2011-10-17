@@ -883,10 +883,12 @@ function continueupdate()
 
 function continueadd()
 {
+    var feed, f, m, dispUrl;
     if(feed = feedi())
     {
         f = feed();
-        new Insertion.Bottom($('items'), 'Adding  ' + f['url'] + "... ");
+        dispUrl = f['url'].replace(/^([a-z]+:\/\/[^\/]+:)([^\/]+)(@.*)$/, '$1******$3');
+        new Insertion.Bottom($('items'), 'Adding ' + dispUrl + "... ");
         $('items').childElements().last().scrollTo();
 
         parameters = 'url=' + encodeURIComponent(f['url']) + "&unread=" + document.addform.unread.value;
