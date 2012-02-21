@@ -4,7 +4,10 @@
 # который, тупая тварь, не умеет это делать самостоятельно. Используется у нас в FeedOnFeeds и MediaWiki.
 # vfilippov@custis.ru, 2010-03-03
 
-function curl_set_env_proxy($curl, $url)
+class CurlEnvProxy
+{
+
+static function set($curl, $url)
 {
     if ($proxy = getenv("http_proxy"))
     {
@@ -56,4 +59,6 @@ function curl_set_env_proxy($curl, $url)
         curl_setopt($curl, CURLOPT_PROXY, $proxy);
     }
     return $proxy;
+}
+
 }
