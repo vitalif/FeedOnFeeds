@@ -7712,7 +7712,7 @@ class SimplePie_File
 				}
 				// added by FoF (vitalif@yourcmc.ru) to enable environment proxy settings support
 				// fucking cURL doesn't support this by default
-				curl_set_env_proxy($fp, $url);
+				CurlEnvProxy::set($fp, $url);
 				curl_setopt($fp, CURLOPT_URL, $url);
 				curl_setopt($fp, CURLOPT_HEADER, 1);
 				curl_setopt($fp, CURLOPT_RETURNTRANSFER, 1);
