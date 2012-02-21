@@ -137,9 +137,9 @@ function globalauth($url, $require = true)
 
 function fof_tag_subscribe($userid, $url, $tag)
 {
-    $id = fof_subscribe($userid, $url);
-    if (preg_match('/<!-- (\d+) -->/is', $id, $m))
-        fof_tag_feed($userid, 0+$m[1], $tag);
+    list($error, $feed) = fof_subscribe($userid, $url);
+    if ($feed)
+        fof_tag_feed($userid, $feed['feed_id'], $tag);
 }
 
 /* Добавление фидов для новых юзеров */

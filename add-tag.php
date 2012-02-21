@@ -29,4 +29,3 @@ foreach(preg_split("/[\s,]*,[\s,]*/", $tags) as $tag)
         fof_tag_item(fof_current_user(), $item, $tag);
     }
 }
-?>

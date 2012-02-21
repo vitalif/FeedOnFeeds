@@ -17,6 +17,7 @@
 include("header.php");
 
 $url = $_REQUEST['rss_url'];
+$new_tags = $_REQUEST['new_tags'];
 $login = $_REQUEST['basic_login'];
 $password = $_REQUEST['basic_password'];
 $opml = $_REQUEST['opml_url'];
@@ -91,7 +92,8 @@ When adding feeds, mark <select name="unread"><option value=today <?= $unread ==
 
 <p>
 RSS or weblog URL: <input type="text" name="rss_url" size="40" value="<?= htmlspecialchars($url) ?>" /> <input name="do" type="Submit" value="Add a feed" /><br />
-Login: <input type="text" name="basic_login" value="<?= htmlspecialchars($login) ?>" /> Password: <input type="password" name="basic_password" value="<?= htmlspecialchars($password) ?>" /> (optional) for password-protected feeds
+Login: <input type="text" name="basic_login" value="<?= htmlspecialchars($login) ?>" /> Password: <input type="password" name="basic_password" value="<?= htmlspecialchars($password) ?>" /> (optional) for password-protected feeds<br />
+Tags for new feed(s): <input type="text" name="new_tags" size="40" value="<?= htmlspecialchars($new_tags) ?>" /> (separate by comma)
 </p>
 
 <h1>OPML import</h1>
@@ -124,14 +126,11 @@ if(count($feeds))
 print("<script>\nwindow.onload = ajaxadd;\nfeedslist = [");
 
 foreach($feeds as $feed)
-{
     $feedjson[] = "{'url': '" . addslashes($feed) . "'}";
-}
 
 print(join($feedjson, ", "));
 print("];\n</script>");
 }
-print("<br>");
+print("<br />");
 
 include("footer.php");
-?>

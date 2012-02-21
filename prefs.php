@@ -56,7 +56,7 @@ if (isset($_REQUEST['tagfeeds']))
             }
         }
         // add tags
-        else if ($prop == 'tag')
+        elseif ($prop == 'tag')
         {
             foreach (preg_split("/[\s,]*,[\s,]*/", $v) as $tag)
             {
@@ -68,7 +68,7 @@ if (isset($_REQUEST['tagfeeds']))
             }
         }
         // change filter
-        else if ($prop == 'filter')
+        elseif ($prop == 'filter')
         {
             if (fof_db_set_feedprop(fof_current_user(), $feed_id, 'filter', $v))
                 $message[] = 'Set filter \''.htmlspecialchars($v).'\' for feed \''.htmlspecialchars($_REQUEST["title_$feed_id"]).'\'';

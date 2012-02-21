@@ -884,14 +884,16 @@ function continueupdate()
 function continueadd()
 {
     var feed, f, m, dispUrl;
-    if(feed = feedi())
+    if (feed = feedi())
     {
         f = feed();
         dispUrl = f['url'].replace(/^([a-z]+:\/\/[^\/]+:)([^\/]+)(@.*)$/, '$1******$3');
         new Insertion.Bottom($('items'), 'Adding ' + dispUrl + "... ");
         $('items').childElements().last().scrollTo();
 
-        parameters = 'url=' + encodeURIComponent(f['url']) + "&unread=" + document.addform.unread.value;
+        var parameters = 'url=' + encodeURIComponent(f['url']);
+        parameters += "&unread=" + document.addform.unread.value;
+        parameters += "&tags=" + document.addform.new_tags.value;
 
         new Ajax.Updater('items', 'add-single.php', {
             method: 'get',
@@ -903,7 +905,7 @@ function continueadd()
     }
     else
     {
-        new Insertion.Bottom($('items'), '<br>Done!');
+        new Insertion.Bottom($('items'), '<br />Done!');
         refreshlist();
     }
 }

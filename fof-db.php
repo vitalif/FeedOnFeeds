@@ -257,7 +257,7 @@ function fof_db_add_feed($url, $title, $link, $description)
 
     fof_safe_query("insert into $FOF_FEED_TABLE (feed_url,feed_title,feed_link,feed_description) values ('%s', '%s', '%s', '%s')", $url, $title, $link, $description);
 
-    return(mysql_insert_id($fof_connection));
+    return mysql_insert_id($fof_connection);
 }
 
 function fof_db_add_subscription($user_id, $feed_id)
@@ -274,9 +274,7 @@ function fof_db_delete_subscription($user_id, $feed_id)
     $result = fof_db_get_items($user_id, $feed_id, $what="all", NULL, NULL);
 
     foreach($result as $r)
-    {
         $items[] = $r['item_id'];
-    }
 
     fof_safe_query("delete from $FOF_SUBSCRIPTION_TABLE where feed_id = %d and user_id = %d", $feed_id, $user_id);
 
@@ -304,14 +302,10 @@ function fof_db_find_item($feed_id, $item_guid)
     $result = fof_safe_query("select item_id from $FOF_ITEM_TABLE where feed_id=%d and item_guid='%s'", $feed_id, $item_guid);
     $row = mysql_fetch_array($result);
 
-    if(mysql_num_rows($result) == 0)
-    {
+    if (mysql_num_rows($result) == 0)
         return NULL;
-    }
     else
-    {
         return($row['item_id']);
-    }
 }
 
 $fof_db_item_fields = array('item_guid', 'item_link', 'item_title', 'item_author', 'item_content', 'item_cached', 'item_published', 'item_updated');
@@ -658,25 +652,17 @@ function fof_db_mark_feed_read($user_id, $feed_id)
     fof_db_untag_items($user_id, 1, $items);
 }
 
-function fof_db_mark_feed_unread($user_id, $feed, $what)
+function fof_db_mark_feed_unread($user_id, $feed_id, $what)
 {
-    global $FOF_ITEM_TAG_TABLE;
+    fof_log("fof_db_mark_feed_unread($user_id, $feed_id, $what)");
 
-    fof_log("fof_db_mark_feed_unread($user_id, $feed, $what)");
-
-    if($what == "all")
-    {
-        $result = fof_db_get_items($user_id, $feed, "all");
-    }
-    if($what == "today")
-    {
-        $result = fof_db_get_items($user_id, $feed, "all", "today");
-    }
+    if ($what == "all")
+        $result = fof_db_get_items($user_id, $feed_id, "all");
+    elseif ($what == "today")
+        $result = fof_db_get_items($user_id, $feed_id, "all", "today");
 
     foreach((array)$result as $r)
-    {
         $items[] = $r['item_id'];
-    }
 
     fof_db_tag_items($user_id, 1, $items);
 }

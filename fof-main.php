@@ -609,34 +609,32 @@ function fof_prepare_url($url)
     return $url;
 }
 
-function fof_subscribe($user_id, $url, $unread="today")
+function fof_subscribe($user_id, $url, $unread = "today")
 {
-    if(!$url) return false;
+    if (!$url)
+        return array("Empty URL", false);
 
     $url = fof_prepare_url($url);
     $feed = fof_db_get_feed_by_url($url);
 
-    if(fof_is_subscribed($user_id, $url))
-    {
-        return "You are already subscribed to " . fof_render_feed_link($feed) . "<br>";
-    }
+    if (fof_is_subscribed($user_id, $url))
+        return array("You are already subscribed to " . fof_render_feed_link($feed), $feed);
 
-    if(fof_feed_exists($url))
+    if (fof_feed_exists($url))
     {
         fof_db_add_subscription($user_id, $feed['feed_id']);
         fof_apply_plugin_tags($id, NULL, $user_id);
         fof_update_feed($feed['feed_id']);
 
-        if($unread != "no") fof_db_mark_feed_unread($user_id, $feed['feed_id'], $unread);
-        return '<font color="green"><b>Subscribed.</b></font><!-- '.$feed['feed_id'].' --><br>';
+        if ($unread != "no")
+            fof_db_mark_feed_unread($user_id, $feed['feed_id'], $unread);
+        return array('<font color="green"><b>Subscribed.</b></font>', $feed);
     }
 
     $rss = fof_parse($url, $user_id);
 
     if (isset($rss->error))
-    {
-        return "Error: <b>" . $rss->error . "</b><br />";
-    }
+        return array("Error: <b>" . $rss->error . "</b>", $feed);
     else
     {
         $url = html_entity_decode($rss->subscribe_url(), ENT_QUOTES);
@@ -645,45 +643,45 @@ function fof_subscribe($user_id, $url, $unread="today")
         // Why? 1) handling broken feeds 2) handling authorized feeds 3) user knows URL better
         //if($self) $url = html_entity_decode($self, ENT_QUOTES);
 
-        if(fof_feed_exists($url))
+        if (fof_feed_exists($url))
         {
             $feed = fof_db_get_feed_by_url($url);
 
-            if(fof_is_subscribed($user_id, $url))
-            {
-                return "You are already subscribed to " . fof_render_feed_link($feed) . "<br>";
-            }
+            if (fof_is_subscribed($user_id, $url))
+                return array("You are already subscribed to " . fof_render_feed_link($feed), $feed);
 
             fof_db_add_subscription($user_id, $feed['feed_id']);
-            if($unread != "no") fof_db_mark_feed_unread($user_id, $feed['feed_id'], $unread);
+            if ($unread != "no")
+                fof_db_mark_feed_unread($user_id, $feed['feed_id'], $unread);
 
-            return '<font color="green"><b>Subscribed.</b></font><!-- '.$feed['feed_id'].' --><br>';
+            return array('<font color="green"><b>Subscribed.</b></font>', $feed);
         }
 
-        $id = fof_add_feed($url, rss_feed_title($rss), $rss->get_link(), $rss->get_description() );
+        $id = fof_add_feed($url, rss_feed_title($rss), $rss->get_link(), $rss->get_description());
 
         fof_update_feed($id);
         fof_db_add_subscription($user_id, $id);
-        if($unread != "no") fof_db_mark_feed_unread($user_id, $id, $unread);
+        if ($unread != "no")
+            fof_db_mark_feed_unread($user_id, $id, $unread);
 
         fof_apply_plugin_tags($id, NULL, $user_id);
 
-        return "<font color='green'><b>Subscribed.</b></font><!-- $id --><br>";
+        $feed = fof_db_get_feed_by_id($id);
+        return array('<font color="green"><b>Subscribed.</b></font>', $feed);
     }
 }
 
 function fof_add_feed($url, $title, $link, $description)
 {
-    if($title == "") $title = "[no title]";
+    if ($title == "")
+        $title = "[no title]";
 
-    $id = fof_db_add_feed($url, $title, $link, $description);
-
-    return $id;
+    return fof_db_add_feed($url, $title, $link, $description);
 }
 
 function fof_is_subscribed($user_id, $url)
 {
-    return(fof_db_is_subscribed($user_id, $url));
+    return fof_db_is_subscribed($user_id, $url);
 }
 
 function fof_feed_exists($url)
