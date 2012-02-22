@@ -765,7 +765,8 @@ function rss_feed_title($rss)
 
 function fof_update_feed($id, $as_user = NULL)
 {
-    if(!$id) return 0;
+    if(!$id)
+        return 0;
 
     if($as_user === NULL)
         $as_user = fof_db_get_feed_single_user($id);
@@ -784,27 +785,30 @@ function fof_update_feed($id, $as_user = NULL)
         return array(0, "Error: <b>" . $rss->error() . "</b>");
     }
 
-    $sub = html_entity_decode($rss->subscribe_url(), ENT_QUOTES);
-    $self_link = $rss->get_link(0, 'self');
-    // Using <link rel="self"> as feed URL instead of user given URL is a fucking bad idea!
-    // Why? 1) handling broken feeds 2) handling authorized feeds 3) user knows URL better
-    //if($self_link) $sub = html_entity_decode($self_link, ENT_QUOTES);
-
-    fof_log("subscription url is $sub");
+    // Changing saved feed URL automatically is a fucking bad idea!
+    // It's very unpleasant to see that URL just changed sometime
+    // by itself because the remote site had an error and gave FOF
+    // some crap instead of real feed.
+    // The another problem is handling feeds with authorization data
+    // in the feed link: such feeds don't usually include login and
+    // password inside the 'self' link.
+    // So we don't change URLs in any way (original FOF did).
 
     $image = $feed['feed_image'];
     $image_cache_date = $feed['feed_image_cache_date'];
 
-    if($feed['feed_image_cache_date'] < (time() - (7*24*60*60)))
+    if ($feed['feed_image_cache_date'] < (time() - (7*24*60*60)))
     {
         $image = $rss->get_favicon();
         $image_cache_date = time();
     }
 
     $title = rss_feed_title($rss);
-    if($title == "") $title = "[no title]";
+    if ($title == "")
+        $title = "[no title]";
 
-    fof_db_feed_update_metadata($id, $sub, $title, $rss->get_link(), $rss->get_description(), $image, $image_cache_date );
+    fof_db_feed_update_metadata($id, $feed['feed_url'], $title,
+        $rss->get_link(), $rss->get_description(), $image, $image_cache_date);
 
     $feed_id = $feed['feed_id'];
     $n = 0;
