@@ -4,19 +4,17 @@
  *
  * login.php - username / password entry
  *
- *
  * Copyright (C) 2004-2007 Stephen Minutillo
  * steve@minutillo.com - http://minutillo.com/steve/
  *
  * Distributed under the GPL - see LICENSE
- *
  */
 
 ob_start();
 
 $fof_no_login = true;
 
-include_once("fof-main.php");
+require_once("fof-main.php");
 
 fof_set_content_type();
 

@@ -17,4 +17,3 @@ include("header.php");
 include("items.php");
 
 include("footer.php");
-?>

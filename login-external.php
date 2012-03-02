@@ -145,12 +145,12 @@ function fof_tag_subscribe($userid, $url, $tag)
 /* Добавление фидов для новых юзеров */
 function fof_add_default_feeds_for_external($user)
 {
-    $fof_userid = $user['id'];
+    $fof_userid = $user['user_id'];
     $login = $user['user_name'];
     $primary = explode('@', $login, 2);
     $primary = $primary[0];
     /* Активность по своим багам */
-    fof_tag_subscribe($fof_userid, 'http://bugs.office.custis.ru/bugs/rss-comments.cgi?ctype=rss&namedcmd=My%20Bugs&fof_sudo=1', 'Me');
+    fof_tag_subscribe($fof_userid, 'http://bugs.office.custis.ru/bugs/rss-comments.cgi?ctype=rss&namedcmd=My%20Bugs&fof_sudo='.$fof_userid, 'Me');
     /* Свои коммиты за сегодня */
     fof_tag_subscribe($fof_userid, 'http://viewvc.office.custis.ru/viewvc.py/?view=query&who='.urlencode(preg_quote($primary)).'&who_match=exact&querysort=date&date=week&limit_changes=100&fof_sudo=1', 'Me');
     /* IT_Crowd: Новости CustisWiki */

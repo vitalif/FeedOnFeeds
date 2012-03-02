@@ -20,11 +20,15 @@ if ( !file_exists( dirname(__FILE__) . '/fof-config.php') )
     die();
 }
 
-require_once("fof-config.php");
-require_once("fof-db.php");
-require_once("classes/fof-prefs.php");
+require_once('fof-config.php');
+require_once('fof-db.php');
+require_once('classes/fof-prefs.php');
+require_once('simplepie/simplepie.php');
 #if (file_exists(dirname(__FILE__).'/login-external.php'))
 #    require_once(dirname(__FILE__).'/login-external.php');
+
+$fof_item_prefilters = array();
+$fof_tag_prefilters = array();
 
 fof_db_connect();
 
@@ -45,8 +49,6 @@ if(!$fof_installer)
     fof_init_plugins();
     ob_end_clean();
 }
-
-require_once('simplepie/simplepie.php');
 
 function fof_set_content_type()
 {
@@ -862,10 +864,8 @@ function fof_update_feed($id, $as_user = NULL)
                 $n++;
 
                 global $fof_item_prefilters;
-                foreach($fof_item_prefilters as $filter)
-                {
+                foreach ($fof_item_prefilters as $filter)
                     list($link, $title, $content) = $filter($item, $link, $title, $content);
-                }
 
                 $id = fof_db_add_item($feed_id, array(
                     'item_guid'      => $item_id,
@@ -997,7 +997,7 @@ function fof_init_plugins()
     $fof_plugin_prefs = array();
     $fof_tag_prefilters = array();
 
-    $p =& FoF_Prefs::instance();
+    $p = FoF_Prefs::instance();
 
     $dirlist = opendir(FOF_DIR . "/plugins");
     while ($file = readdir($dirlist))

@@ -786,7 +786,8 @@ function fof_update_user($user)
 function fof_db_delete_user($username)
 {
     global $FOF_USER_TABLE, $FOF_ITEM_TAG_TABLE, $FOF_SUBSCRIPTION_TABLE;
-    $user_id = fof_db_get_user_id($username);
+    $user = fof_db_get_user($username);
+    $user_id = $user['user_id'];
 
     fof_safe_query("delete from $FOF_SUBSCRIPTION_TABLE where user_id = %d", $user_id);
     fof_safe_query("delete from $FOF_ITEM_TAG_TABLE where user_id = %d", $user_id);
