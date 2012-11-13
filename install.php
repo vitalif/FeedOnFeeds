@@ -209,9 +209,8 @@ CREATE TABLE IF NOT EXISTS `$FOF_ITEM_TABLE` (
   `item_author` text NOT NULL,
   `item_content` text NOT NULL,
   PRIMARY KEY  (`item_id`),
-  KEY `feed_id` (`feed_id`),
   KEY `item_guid` (`item_guid`(255)),
-  KEY `feed_id_item_cached` (`feed_id`,`item_cached`),
+  KEY `feed_id_item_published` (`feed_id`,`item_published`),
   FOREIGN KEY (`feed_id`) REFERENCES `$FOF_FEED_TABLE` (`feed_id`) ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 EOQ;
