@@ -1,5 +1,5 @@
---- simplepie.php	2011-10-16 03:06:55.785282901 +0400
-+++ simplepie.php	2011-10-16 02:14:13.797281143 +0400
+--- simplepie.php.orig	2012-11-08 14:51:05.000000000 +0400
++++ simplepie.php	2012-11-08 14:50:18.000000000 +0400
 @@ -43,6 +43,10 @@
   * @todo phpDoc comments
   */
@@ -1039,7 +1039,7 @@
 -			$sniffer =& new $this->content_type_sniffer_class($file);
 +			$sniffer = new $this->content_type_sniffer_class($file);
  			$sniffed = $sniffer->get_type();
- 			if (in_array($sniffed, array('application/rss+xml', 'application/rdf+xml', 'text/rdf', 'application/atom+xml', 'text/xml', 'application/xml')))
+ 			if (in_array($sniffed, array('application/x-rss+xml', 'application/rss+xml', 'application/rdf+xml', 'text/rdf', 'application/atom+xml', 'text/xml', 'application/xml')))
  			{
 @@ -14204,7 +14231,7 @@ class SimplePie_Locator
  				if (!in_array($href, $done) && in_array('feed', $rel) || (in_array('alternate', $rel) && !empty($link['attribs']['type']['data']) && in_array(strtolower(SimplePie_Misc::parse_mime($link['attribs']['type']['data'])), array('application/rss+xml', 'application/atom+xml'))) && !isset($feeds[$href]))
