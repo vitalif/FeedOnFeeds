@@ -353,8 +353,7 @@ function fof_db_get_items($user_id = 1, $feed = NULL, $what = "unread",
     }
 
     $args = array();
-    // FIXME Add STRAIGHT_JOIN here for MySQL < 5.5
-    $select = "SELECT SQL_NO_CACHE i.* , f.*, s.subscription_prefs ";
+    $select = "SELECT STRAIGHT_JOIN i.* , f.*, s.subscription_prefs ";
     $from = "$FOF_ITEM_TABLE i, $FOF_FEED_TABLE f, $FOF_SUBSCRIPTION_TABLE s ";
     $where = "WHERE s.user_id=$user_id AND s.feed_id=f.feed_id AND f.feed_id=i.feed_id ";
 

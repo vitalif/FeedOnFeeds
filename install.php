@@ -221,7 +221,7 @@ CREATE TABLE IF NOT EXISTS `$FOF_ITEM_TAG_TABLE` (
   `user_id` int(11) NOT NULL default '0',
   `item_id` int(11) NOT NULL default '0',
   `tag_id` int(11) NOT NULL default '0',
-  PRIMARY KEY (`user_id`,`item_id`,`tag_id`),
+  PRIMARY KEY (`tag_id`,`user_id`,`item_id`),
   FOREIGN KEY (`tag_id`) REFERENCES `$FOF_TAG_TABLE` (`tag_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   FOREIGN KEY (`user_id`) REFERENCES `$FOF_USER_TABLE` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   FOREIGN KEY (`item_id`) REFERENCES `$FOF_ITEM_TABLE` (`item_id`) ON DELETE CASCADE ON UPDATE CASCADE
@@ -265,6 +265,10 @@ if (!mysql_num_rows(fof_db_query("show columns from $FOF_FEED_TABLE like 'feed_c
 if (!mysql_num_rows(fof_db_query("show columns from $FOF_ITEM_TABLE like 'item_author'")) &&
     !fof_db_query("ALTER TABLE $FOF_ITEM_TABLE ADD `item_author` text NOT NULL AFTER `item_title`;"))
     exit("Can't add column item_author to table $FOF_ITEM_TABLE.  MySQL says: <b>" . mysql_error() . "</b><br>");
+
+# FIXME: Need to update:
+# alter table fof_item drop key feed_id, add key item_published (item_published);
+# alter table fof_item_tag drop primary key, drop key tag_id, add primary key (tag_id, user_id, item_id), add key user_id (user_id);
 
 ?>
 Schema up to date.<hr>
