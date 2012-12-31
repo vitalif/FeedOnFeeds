@@ -20,7 +20,7 @@ $fof_no_login = true;
 $fof_user_id = 1;
 include_once("fof-main.php");
 
-$p =& FoF_Prefs::instance();
+$p = FoF_Prefs::instance();
 $fof_admin_prefs = $p->prefs;
 
 fof_log("=== update started, timeout = $fof_admin_prefs[autotimeout], purge = $fof_admin_prefs[purge] ===", "update");

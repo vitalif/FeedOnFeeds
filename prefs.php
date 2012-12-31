@@ -14,7 +14,7 @@
 
 include_once("fof-main.php");
 
-$prefs =& FoF_Prefs::instance();
+$prefs = FoF_Prefs::instance();
 
 if (fof_is_admin() && isset($_POST['adminprefs']))
 {

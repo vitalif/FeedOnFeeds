@@ -37,12 +37,12 @@ if(!$fof_installer)
     if(!$fof_no_login)
     {
         require_user();
-        $fof_prefs_obj =& FoF_Prefs::instance();
+        $fof_prefs_obj = FoF_Prefs::instance();
     }
     else
     {
         $fof_user_id = 1;
-        $fof_prefs_obj =& FoF_Prefs::instance();
+        $fof_prefs_obj = FoF_Prefs::instance();
     }
 
     ob_start();
@@ -137,7 +137,7 @@ function fof_get_users()
 
 function fof_prefs()
 {
-    $p =& FoF_Prefs::instance();
+    $p = FoF_Prefs::instance();
     return $p->prefs;
 }
 
@@ -890,7 +890,7 @@ function fof_update_feed($id, $as_user = NULL)
     // unread or starred, not currently in the feed or within sizeof(feed) items
     // of being in the feed, and are over 'purge' many days old
 
-    $p =& FoF_Prefs::instance();
+    $p = FoF_Prefs::instance();
     $admin_prefs = $p->admin_prefs;
 
     if($admin_prefs['purge'] != "")

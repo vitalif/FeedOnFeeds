@@ -18,7 +18,7 @@ class FoF_Prefs
     var $prefs;
     var $admin_prefs;
 
-    function FoF_Prefs($user_id)
+    function __construct($user_id)
     {
         global $FOF_USER_TABLE;
 
@@ -52,10 +52,13 @@ class FoF_Prefs
         }
     }
 
-    function &instance()
+    static function instance()
     {
         static $instance;
-        if(!isset($instance)) $instance = new FoF_Prefs(fof_current_user());
+        if(!isset($instance))
+        {
+            $instance = new FoF_Prefs(fof_current_user());
+        }
 
         return $instance;
     }
@@ -105,5 +108,3 @@ class FoF_Prefs
         fof_db_save_prefs($this->user_id, $this->prefs);
     }
 }
-
-?>
