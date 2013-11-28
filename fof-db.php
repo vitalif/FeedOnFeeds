@@ -269,17 +269,13 @@ function fof_db_add_subscription($user_id, $feed_id)
 
 function fof_db_delete_subscription($user_id, $feed_id)
 {
-    global $FOF_SUBSCRIPTION_TABLE, $FOF_ITEM_TAG_TABLE;
+    global $FOF_SUBSCRIPTION_TABLE, $FOF_ITEM_TAG_TABLE, $FOF_ITEM_TABLE;
 
-    $result = fof_db_get_items($user_id, $feed_id, $what="all", NULL, NULL);
-
-    foreach($result as $r)
-        $items[] = $r['item_id'];
-
-    fof_safe_query("delete from $FOF_SUBSCRIPTION_TABLE where feed_id = %d and user_id = %d", $feed_id, $user_id);
-
-    if (count($items))
-        fof_safe_query("delete from $FOF_ITEM_TAG_TABLE where user_id = %d and item_id in (".join(", ", $items).")", $user_id);
+    fof_safe_query(
+        "delete from s, it using $FOF_ITEM_TAG_TABLE it, $FOF_SUBSCRIPTION_TABLE s, $FOF_ITEM_TABLE i".
+        " where i.item_id=it.item_id and s.feed_id=%d and i.feed_id=s.feed_id and it.user_id=%d and s.user_id=it.user_id",
+        $feed_id, $user_id
+    );
 }
 
 function fof_db_delete_feed($feed_id)
