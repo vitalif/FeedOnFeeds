@@ -1,5 +1,5 @@
---- simplepie.php.orig	2012-11-08 14:51:05.000000000 +0400
-+++ simplepie.php	2012-11-08 14:50:18.000000000 +0400
+--- simplepie.php.orig	2014-11-01 15:22:44.047223926 +0300
++++ simplepie.php	2014-11-01 15:23:39.571225438 +0300
 @@ -43,6 +43,10 @@
   * @todo phpDoc comments
   */
@@ -876,15 +876,27 @@
  										if (!$decoder->parse())
  										{
  											$this->error = 'Unable to decode HTTP "gzip" stream';
-@@ -8630,7 +8660,7 @@ class SimplePie_Cache
+@@ -8628,9 +8658,9 @@ class SimplePie_Cache
+ 	 * @static
+ 	 * @access public
  	 */
- 	function create($location, $filename, $extension)
+-	function create($location, $filename, $extension)
++	static function create($location, $filename, $extension)
  	{
 -		$location_iri =& new SimplePie_IRI($location);
 +		$location_iri = new SimplePie_IRI($location);
  		switch ($location_iri->get_scheme())
  		{
  			case 'mysql':
+@@ -9271,7 +9301,7 @@ class SimplePie_Misc
+ 	 * @param str $cache_name_function Obsolete. Exists for backwards
+ 	 * compatibility reasons only.
+ 	 */
+-	function display_cached_file($identifier_url, $cache_location = './cache', $cache_extension = 'spc', $cache_class = 'SimplePie_Cache', $cache_name_function = 'md5')
++	static function display_cached_file($identifier_url, $cache_location = './cache', $cache_extension = 'spc', $cache_class = 'SimplePie_Cache', $cache_name_function = 'md5')
+ 	{
+ 		$cache = call_user_func(array($cache_class, 'create'), $cache_location, $identifier_url, $cache_extension);
+ 
 @@ -9327,7 +9357,7 @@ class SimplePie_Misc
  
  	function parse_url($url)

@@ -4,9 +4,8 @@
  *
  * favicon.php - displays an image cached by SimplePie
  *
- *
- * Copyright (C) 2004-2007 Stephen Minutillo
- * steve@minutillo.com - http://minutillo.com/steve/
+ * Copyright (C) 2004-2007 Stephen Minutillo steve@minutillo.com http://minutillo.com/steve/
+ *           (C) 2009-2014 Vitaliy Filippov vitalif@mail.ru http://yourcmc.ru/wiki/
  *
  * Distributed under the GPL - see LICENSE
  *

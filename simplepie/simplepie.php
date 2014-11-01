@@ -8658,7 +8658,7 @@ class SimplePie_Cache
 	 * @static
 	 * @access public
 	 */
-	function create($location, $filename, $extension)
+	static function create($location, $filename, $extension)
 	{
 		$location_iri = new SimplePie_IRI($location);
 		switch ($location_iri->get_scheme())
@@ -9301,7 +9301,7 @@ class SimplePie_Misc
 	 * @param str $cache_name_function Obsolete. Exists for backwards
 	 * compatibility reasons only.
 	 */
-	function display_cached_file($identifier_url, $cache_location = './cache', $cache_extension = 'spc', $cache_class = 'SimplePie_Cache', $cache_name_function = 'md5')
+	static function display_cached_file($identifier_url, $cache_location = './cache', $cache_extension = 'spc', $cache_class = 'SimplePie_Cache', $cache_name_function = 'md5')
 	{
 		$cache = call_user_func(array($cache_class, 'create'), $cache_location, $identifier_url, $cache_extension);
 
