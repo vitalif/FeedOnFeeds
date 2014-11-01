@@ -4,8 +4,8 @@
  *
  * fof-db.php - (nearly) all of the DB specific code
  *
- * Copyright (C) 2004-2007 Stephen Minutillo
- * steve@minutillo.com - http://minutillo.com/steve/
+ * Copyright (C) 2004-2007 Stephen Minutillo steve@minutillo.com http://minutillo.com/steve/
+ *           (C) 2009-2014 Vitaliy Filippov vitalif@mail.ru http://yourcmc.ru/wiki/
  *
  * Distributed under the GPL - see LICENSE
  */
@@ -185,18 +185,18 @@ function fof_db_get_item_count($user_id)
     return(fof_safe_query("select count(*) as count, $FOF_ITEM_TABLE.feed_id as id from $FOF_ITEM_TABLE, $FOF_SUBSCRIPTION_TABLE where $FOF_SUBSCRIPTION_TABLE.user_id = %d and $FOF_ITEM_TABLE.feed_id = $FOF_SUBSCRIPTION_TABLE.feed_id group by id", $user_id));
 }
 
-function fof_db_get_unread_item_count($user_id)
+function fof_db_get_tagged_item_count($user_id, $tag_id)
 {
-    global $FOF_FEED_TABLE, $FOF_ITEM_TABLE, $FOF_SUBSCRIPTION_TABLE, $FOF_ITEM_TAG_TABLE;
+    global $FOF_ITEM_TABLE, $FOF_ITEM_TAG_TABLE;
 
-    return(fof_safe_query("select count(*) as count, $FOF_ITEM_TABLE.feed_id as id from $FOF_ITEM_TABLE, $FOF_SUBSCRIPTION_TABLE, $FOF_ITEM_TAG_TABLE, $FOF_FEED_TABLE where $FOF_ITEM_TABLE.item_id = $FOF_ITEM_TAG_TABLE.item_id and $FOF_SUBSCRIPTION_TABLE.user_id = $user_id and  $FOF_ITEM_TAG_TABLE.tag_id = 1 and $FOF_ITEM_TAG_TABLE.user_id = %d and $FOF_FEED_TABLE.feed_id = $FOF_SUBSCRIPTION_TABLE.feed_id and $FOF_ITEM_TABLE.feed_id = $FOF_FEED_TABLE.feed_id group by id", $user_id));
-}
-
-function fof_db_get_starred_item_count($user_id)
-{
-    global $FOF_FEED_TABLE, $FOF_ITEM_TABLE, $FOF_SUBSCRIPTION_TABLE, $FOF_ITEM_TAG_TABLE;
-
-    return(fof_safe_query("select count(*) as count, $FOF_ITEM_TABLE.feed_id as id from $FOF_ITEM_TABLE, $FOF_SUBSCRIPTION_TABLE, $FOF_ITEM_TAG_TABLE, $FOF_FEED_TABLE where $FOF_ITEM_TABLE.item_id = $FOF_ITEM_TAG_TABLE.item_id and $FOF_SUBSCRIPTION_TABLE.user_id = $user_id and  $FOF_ITEM_TAG_TABLE.tag_id = 2 and $FOF_ITEM_TAG_TABLE.user_id = %d and $FOF_FEED_TABLE.feed_id = $FOF_SUBSCRIPTION_TABLE.feed_id and $FOF_ITEM_TABLE.feed_id = $FOF_FEED_TABLE.feed_id group by id", $user_id));
+    # Lookup feed_id from index, not from the table itself
+    return fof_safe_query(
+        "select count(*) as count, $FOF_ITEM_TABLE.feed_id as id".
+        " from $FOF_ITEM_TAG_TABLE, $FOF_ITEM_TABLE USE INDEX (item_id_feed_id)".
+        " where $FOF_ITEM_TABLE.item_id = $FOF_ITEM_TAG_TABLE.item_id".
+        " and $FOF_ITEM_TAG_TABLE.tag_id = %d and $FOF_ITEM_TAG_TABLE.user_id = %d group by id",
+        $tag_id, $user_id
+    );
 }
 
 function fof_db_get_subscribed_users($feed_id)
@@ -351,13 +351,12 @@ function fof_db_get_items($user_id = 1, $feed = NULL, $what = "unread",
     $args = array();
     $select = "SELECT STRAIGHT_JOIN i.* , f.*, s.subscription_prefs ";
     $from = "$FOF_ITEM_TABLE i, $FOF_FEED_TABLE f, $FOF_SUBSCRIPTION_TABLE s ";
-    $where = "WHERE s.user_id=$user_id AND s.feed_id=f.feed_id AND f.feed_id=i.feed_id ";
+    $where = "WHERE s.user_id=$user_id AND s.feed_id=f.feed_id AND f.feed_id=i.feed_id";
 
     if (!is_null($feed) && $feed != "")
         $where .= sprintf("AND f.feed_id = %d ", $feed);
 
-    if (!is_null($when) && $when != "")
-        $where .= sprintf("AND i.item_published > %d and i.item_published < %d ", $begin, $end);
+    $pubdate = 'i.item_published';
 
     if ($what != "all")
     {
@@ -368,16 +367,24 @@ function fof_db_get_items($user_id = 1, $feed = NULL, $what = "unread",
             $where .= " AND it$i.user_id=$user_id AND it$i.item_id=i.item_id AND it$i.tag_id=t$i.tag_id AND t$i.tag_name='%s'";
         }
         $args = array_merge($args, $tags);
+        if ($tags)
+        {
+            // FIXME: For several tags it may be better to sort using the most rare tag?
+            $pubdate = 'it0.item_published';
+        }
     }
+
+    if (!is_null($when) && $when != "")
+        $where .= sprintf(" AND $pubdate > %d AND $pubdate < %d", $begin, $end);
 
     if (!is_null($search) && $search != "")
     {
-        $where .= " AND (i.item_title like '%%%s%%' or i.item_content like '%%%s%%')";
+        $where .= " AND (i.item_title like '%%%s%%' OR i.item_content like '%%%s%%')";
         $args[] = $search;
         $args[] = $search;
     }
 
-    $order_by = "order by i.item_published desc $limit_clause ";
+    $order_by = "order by $pubdate desc $limit_clause ";
 
     $query = "$select FROM $from $where $group $order_by";
     $result = fof_safe_query($query, $args);
@@ -474,11 +481,20 @@ function fof_db_set_subscription_prefs($user_id, $feed_id, $prefs)
     return fof_safe_query("update $FOF_SUBSCRIPTION_TABLE set subscription_prefs = '%s' where feed_id = %d and user_id = %d", serialize($prefs), $feed_id, $user_id);
 }
 
+// tag feed and all its items
 function fof_db_tag_feed($user_id, $feed_id, $tag_id)
 {
+    global $FOF_ITEM_TAG_TABLE, $FOF_ITEM_TABLE;
     $prefs = fof_db_get_subscription_prefs($user_id, $feed_id);
-    if(!is_array($prefs['tags']) || !in_array($tag_id, $prefs['tags'])) $prefs['tags'][] = $tag_id;
+    if(!is_array($prefs['tags']) || !in_array($tag_id, $prefs['tags']))
+        $prefs['tags'][] = $tag_id;
     fof_db_set_subscription_prefs($user_id, $feed_id, $prefs);
+    fof_safe_query(
+        "insert into $FOF_ITEM_TAG_TABLE (tag_id, user_id, item_id, item_published)".
+        " select %d, %d, item_id, item_published from $FOF_ITEM_TABLE where feed_id=%d".
+        " on duplicate key update item_published=values(item_published)",
+        $tag_id, $user_id, $feed_id
+    );
 }
 
 function fof_db_set_feedprop($user_id, $feed_id, $prop, $value)
@@ -494,12 +510,19 @@ function fof_db_set_feedprop($user_id, $feed_id, $prop, $value)
     return $chg;
 }
 
+// untag feed and all its items
 function fof_db_untag_feed($user_id, $feed_id, $tag_id)
 {
+    global $FOF_ITEM_TAG_TABLE, $FOF_ITEM_TABLE;
     $prefs = fof_db_get_subscription_prefs($user_id, $feed_id);
     if(is_array($prefs['tags']))
         $prefs['tags'] = array_diff($prefs['tags'], array($tag_id));
     fof_db_set_subscription_prefs($user_id, $feed_id, $prefs);
+    fof_safe_query(
+        "delete from it using $FOF_ITEM_TAG_TABLE it, $FOF_ITEM_TABLE i".
+        " where it.item_id=i.item_id and it.user_id=%d and it.tag_id=%d and i.feed_id=%d".
+        $user_id, $tag_id, $feed_id
+    );
 }
 
 function fof_db_get_item_tags($user_id, $item_id)
@@ -533,9 +556,9 @@ function fof_db_get_unread_count($user_id)
 
 function fof_db_get_tag_unread($user_id)
 {
-    global $FOF_TAG_TABLE, $FOF_ITEM_TABLE, $FOF_ITEM_TAG_TABLE;
+    global $FOF_TAG_TABLE, $FOF_ITEM_TAG_TABLE;
 
-    $result = fof_safe_query("SELECT count(*) as count, it2.tag_id FROM $FOF_ITEM_TABLE i, $FOF_ITEM_TAG_TABLE it , $FOF_ITEM_TAG_TABLE it2 where it.item_id = it2.item_id and it.tag_id = 1 and i.item_id = it.item_id and i.item_id = it2.item_id and it.user_id = %d and it2.user_id = %d group by it2.tag_id", $user_id, $user_id);
+    $result = fof_safe_query("SELECT count(*) as count, it2.tag_id FROM $FOF_ITEM_TAG_TABLE it, $FOF_ITEM_TAG_TABLE it2 where it.item_id = it2.item_id and it.tag_id = 1 and it.user_id = %d and it2.user_id = %d group by it2.tag_id", $user_id, $user_id);
 
     $counts = array();
     while($row = fof_db_get_row($result))
@@ -684,16 +707,15 @@ function fof_db_mark_item_unread($users, $id)
 
 function fof_db_tag_items($user_id, $tag_id, $items)
 {
-    global $FOF_ITEM_TAG_TABLE;
+    global $FOF_ITEM_TAG_TABLE, $FOF_ITEM_TABLE;
     if (!$items)
         return;
-    if (!is_array($items))
-        $items = array($items);
 
-    foreach($items as $item)
-        $sql[] = sprintf("(%d, %d, %d)", $user_id, $tag_id, $item);
-    $values = implode(",", $sql);
-    $sql = "insert into $FOF_ITEM_TAG_TABLE (user_id, tag_id, item_id) values $values on duplicate key update item_id=item_id";
+    $items = implode(',', (array)$items);
+    $sql = "insert into $FOF_ITEM_TAG_TABLE (user_id, tag_id, item_id, item_published)".
+        " select %d, %d, item_id, item_published from $FOF_ITEM_TABLE".
+        " where item_id in ($items)".
+        " on duplicate key update item_published=values(item_published)";
 
     $result = fof_db_query($sql, 1);
     if (!$result)

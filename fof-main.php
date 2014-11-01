@@ -4,9 +4,8 @@
  *
  * fof-main.php - initializes FoF, and contains functions used from other scripts
  *
- *
- * Copyright (C) 2004-2007 Stephen Minutillo
- * steve@minutillo.com - http://minutillo.com/steve/
+ * Copyright (C) 2004-2007 Stephen Minutillo steve@minutillo.com http://minutillo.com/steve/
+ *           (C) 2009-2014 Vitaliy Filippov vitalif@mail.ru http://yourcmc.ru/wiki/
  *
  * Distributed under the GPL - see LICENSE
  *
@@ -191,55 +190,31 @@ function fof_get_item_tags($user_id, $item_id)
 function fof_tag_feed($user_id, $feed_id, $tag)
 {
     $tag_id = fof_db_get_tag_by_name($user_id, $tag);
-    if($tag_id == NULL)
+    if (!$tag_id)
     {
         $tag_id = fof_db_create_tag($user_id, $tag);
     }
-
-    $result = fof_db_get_items($user_id, $feed_id, $what="all", NULL, NULL);
-
-    foreach($result as $r)
-    {
-        $items[] = $r['item_id'];
-    }
-
-    fof_db_tag_items($user_id, $tag_id, $items);
-
     fof_db_tag_feed($user_id, $feed_id, $tag_id);
 }
 
 function fof_untag_feed($user_id, $feed_id, $tag)
 {
     $tag_id = fof_db_get_tag_by_name($user_id, $tag);
-    if($tag_id == NULL)
+    if ($tag_id)
     {
-        $tag_id = fof_db_create_tag($user_id, $tag);
+        fof_db_untag_feed($user_id, $feed_id, $tag_id);
     }
-
-    $result = fof_db_get_items($user_id, $feed_id, $what="all", NULL, NULL);
-
-    foreach($result as $r)
-    {
-        $items[] = $r['item_id'];
-    }
-
-    fof_db_untag_items($user_id, $tag_id, $items);
-
-    fof_db_untag_feed($user_id, $feed_id, $tag_id);
 }
 
-function fof_tag_item($user_id, $item_id, $tag)
+function fof_tag_item($user_id, $item_id, $tags)
 {
-    if(is_array($tag)) $tags = $tag; else $tags[] = $tag;
-
-    foreach($tags as $tag)
+    foreach((array)$tags as $tag)
     {
         $tag_id = fof_db_get_tag_by_name($user_id, $tag);
-        if($tag_id == NULL)
+        if (!$tag_id)
         {
-                $tag_id = fof_db_create_tag($user_id, $tag);
+            $tag_id = fof_db_create_tag($user_id, $tag);
         }
-
         fof_db_tag_items($user_id, $tag_id, $item_id);
     }
 }
@@ -379,7 +354,7 @@ function fof_get_feeds($user_id, $order = 'feed_title', $direction = 'asc')
         }
     }
 
-    $result = fof_db_get_unread_item_count($user_id);
+    $result = fof_db_get_tagged_item_count($user_id, 1);
 
     while($row = fof_db_get_row($result))
         for($i=0; $i<count($feeds); $i++)
@@ -391,7 +366,7 @@ function fof_get_feeds($user_id, $order = 'feed_title', $direction = 'asc')
         $feed['feed_starred'] = 0;
     }
 
-    $result = fof_db_get_starred_item_count($user_id);
+    $result = fof_db_get_tagged_item_count($user_id, 2);
 
     while($row = fof_db_get_row($result))
     {

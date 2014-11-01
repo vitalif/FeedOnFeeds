@@ -4,9 +4,8 @@
  *
  * install.php - creates tables and cache directory, if they don't exist
  *
- *
- * Copyright (C) 2004-2007 Stephen Minutillo
- * steve@minutillo.com - http://minutillo.com/steve/
+ * Copyright (C) 2004-2007 Stephen Minutillo steve@minutillo.com http://minutillo.com/steve/
+ *           (C) 2009-2014 Vitaliy Filippov vitalif@mail.ru http://yourcmc.ru/wiki/
  *
  * Distributed under the GPL - see LICENSE
  *
@@ -212,6 +211,7 @@ CREATE TABLE IF NOT EXISTS `$FOF_ITEM_TABLE` (
   KEY `item_guid` (`item_guid`(255)),
   KEY `feed_id_item_cached` (`feed_id`,`item_cached`),
   KEY `item_published` (`item_published`),
+  KEY `item_id_feed_id` (`item_id`,`feed_id`),
   FOREIGN KEY (`feed_id`) REFERENCES `$FOF_FEED_TABLE` (`feed_id`) ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 EOQ;
@@ -221,7 +221,9 @@ CREATE TABLE IF NOT EXISTS `$FOF_ITEM_TAG_TABLE` (
   `user_id` int(11) NOT NULL default '0',
   `item_id` int(11) NOT NULL default '0',
   `tag_id` int(11) NOT NULL default '0',
+  `item_published` int(11) NOT NULL default '0',
   PRIMARY KEY (`tag_id`,`user_id`,`item_id`),
+  KEY `tag_id_user_id_item_published_item_id` (tag_id, user_id, item_published, item_id),
   FOREIGN KEY (`tag_id`) REFERENCES `$FOF_TAG_TABLE` (`tag_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   FOREIGN KEY (`user_id`) REFERENCES `$FOF_USER_TABLE` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   FOREIGN KEY (`item_id`) REFERENCES `$FOF_ITEM_TABLE` (`item_id`) ON DELETE CASCADE ON UPDATE CASCADE
