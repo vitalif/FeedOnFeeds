@@ -160,7 +160,7 @@ function fof_get_tags($user_id)
 
     $counts = fof_db_get_tag_unread($user_id);
 
-    while($row = fof_db_get_row($result))
+    foreach ($result as $row)
     {
         if(isset($counts[$row['tag_id']]))
             $row['unread'] = $counts[$row['tag_id']];

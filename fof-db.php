@@ -182,19 +182,17 @@ function fof_db_get_item_count($user_id)
 {
     global $FOF_FEED_TABLE, $FOF_ITEM_TABLE, $FOF_SUBSCRIPTION_TABLE, $FOF_ITEM_TAG_TABLE;
 
-    return(fof_safe_query("select count(*) as count, $FOF_ITEM_TABLE.feed_id as id from $FOF_ITEM_TABLE, $FOF_SUBSCRIPTION_TABLE where $FOF_SUBSCRIPTION_TABLE.user_id = %d and $FOF_ITEM_TABLE.feed_id = $FOF_SUBSCRIPTION_TABLE.feed_id group by id", $user_id));
+    return fof_safe_query("select straight_join count(*) as count, $FOF_ITEM_TABLE.feed_id as id".
+        " from $FOF_SUBSCRIPTION_TABLE, $FOF_ITEM_TABLE where $FOF_SUBSCRIPTION_TABLE.user_id = %d".
+        " and $FOF_ITEM_TABLE.feed_id = $FOF_SUBSCRIPTION_TABLE.feed_id group by id", $user_id);
 }
 
 function fof_db_get_tagged_item_count($user_id, $tag_id)
 {
-    global $FOF_ITEM_TABLE, $FOF_ITEM_TAG_TABLE;
-
-    # Lookup feed_id from index, not from the table itself
+    global $FOF_ITEM_TAG_TABLE;
     return fof_safe_query(
-        "select count(*) as count, $FOF_ITEM_TABLE.feed_id as id".
-        " from $FOF_ITEM_TAG_TABLE, $FOF_ITEM_TABLE USE INDEX (item_id_feed_id)".
-        " where $FOF_ITEM_TABLE.item_id = $FOF_ITEM_TAG_TABLE.item_id".
-        " and $FOF_ITEM_TAG_TABLE.tag_id = %d and $FOF_ITEM_TAG_TABLE.user_id = %d group by id",
+        "select count(*) as count, feed_id as id".
+        " from $FOF_ITEM_TAG_TABLE where tag_id = %d and user_id = %d group by id",
         $tag_id, $user_id
     );
 }
@@ -354,23 +352,41 @@ function fof_db_get_items($user_id = 1, $feed = NULL, $what = "unread",
     $where = "WHERE s.user_id=$user_id AND s.feed_id=f.feed_id AND f.feed_id=i.feed_id";
 
     if (!is_null($feed) && $feed != "")
-        $where .= sprintf("AND f.feed_id = %d ", $feed);
+        $where .= sprintf(" AND f.feed_id = %d ", $feed);
 
     $pubdate = 'i.item_published';
 
     if ($what != "all")
     {
+        $alltags = array();
+        foreach (fof_db_get_tags($user_id) as $t) // returned from cache
+        {
+            $alltags[mb_strtolower($t['tag_name'])] = $t;
+        }
+        $min_tag = false;
+        $min_i = false;
         $tags = preg_split("/[\s,]*,[\s,]*/", $what);
         foreach ($tags as $i => $tag)
         {
-            $from = "$FOF_TAG_TABLE t$i, $FOF_ITEM_TAG_TABLE it$i, $from";
-            $where .= " AND it$i.user_id=$user_id AND it$i.item_id=i.item_id AND it$i.tag_id=t$i.tag_id AND t$i.tag_name='%s'";
+            $tag = mb_strtolower(trim($tag));
+            if (isset($alltags[$tag]))
+            {
+                $from = "$FOF_ITEM_TAG_TABLE it$i, $from";
+                // feed_id condition is redundant, used to speedup match by feed+tag(s)
+                $where .= " AND it$i.feed_id=i.feed_id AND it$i.user_id=$user_id".
+                    " AND it$i.item_id=i.item_id AND it$i.tag_id=%d";
+                $args[] = $alltags[$tag]['tag_id'];
+                if (!$min_tag || $min_tag['count'] > $alltags[$tag]['count'])
+                {
+                    // For several tags it's better to sort using the most rare one
+                    $min_tag = $alltags[$tag];
+                    $min_i = $i;
+                }
+            }
         }
-        $args = array_merge($args, $tags);
-        if ($tags)
+        if ($min_i !== false)
         {
-            // FIXME: For several tags it may be better to sort using the most rare tag?
-            $pubdate = 'it0.item_published';
+            $pubdate = "it$min_i.item_published";
         }
     }
 
@@ -490,8 +506,8 @@ function fof_db_tag_feed($user_id, $feed_id, $tag_id)
         $prefs['tags'][] = $tag_id;
     fof_db_set_subscription_prefs($user_id, $feed_id, $prefs);
     fof_safe_query(
-        "insert into $FOF_ITEM_TAG_TABLE (tag_id, user_id, item_id, item_published)".
-        " select %d, %d, item_id, item_published from $FOF_ITEM_TABLE where feed_id=%d".
+        "insert into $FOF_ITEM_TAG_TABLE (tag_id, user_id, item_id, item_published, feed_id)".
+        " select %d, %d, item_id, item_published, feed_id from $FOF_ITEM_TABLE where feed_id=%d".
         " on duplicate key update item_published=values(item_published)",
         $tag_id, $user_id, $feed_id
     );
@@ -558,7 +574,10 @@ function fof_db_get_tag_unread($user_id)
 {
     global $FOF_TAG_TABLE, $FOF_ITEM_TAG_TABLE;
 
-    $result = fof_safe_query("SELECT count(*) as count, it2.tag_id FROM $FOF_ITEM_TAG_TABLE it, $FOF_ITEM_TAG_TABLE it2 where it.item_id = it2.item_id and it.tag_id = 1 and it.user_id = %d and it2.user_id = %d group by it2.tag_id", $user_id, $user_id);
+    $result = fof_safe_query(
+        "select straight_join count(*) as count, it2.tag_id from $FOF_ITEM_TAG_TABLE it, $FOF_ITEM_TAG_TABLE it2 use index (item_id_user_id_tag_id)".
+        " where it.item_id = it2.item_id and it.tag_id = 1 and it.user_id = %d and it2.user_id = %d group by it2.tag_id", $user_id, $user_id
+    );
 
     $counts = array();
     while($row = fof_db_get_row($result))
@@ -573,15 +592,28 @@ function fof_db_get_tags($user_id)
 {
     global $FOF_TAG_TABLE, $FOF_ITEM_TABLE, $FOF_ITEM_TAG_TABLE, $fof_connection;
 
-    $sql = "SELECT $FOF_TAG_TABLE.tag_id, $FOF_TAG_TABLE.tag_name, count( $FOF_ITEM_TAG_TABLE.item_id ) as count
+    static $cache = array();
+    if (isset($cache[$user_id]))
+    {
+        return $cache[$user_id];
+    }
+
+    $sql = "SELECT $FOF_TAG_TABLE.tag_id, $FOF_TAG_TABLE.tag_name, count($FOF_ITEM_TAG_TABLE.item_id) as count
         FROM $FOF_TAG_TABLE
         LEFT JOIN $FOF_ITEM_TAG_TABLE ON $FOF_TAG_TABLE.tag_id = $FOF_ITEM_TAG_TABLE.tag_id
         WHERE $FOF_ITEM_TAG_TABLE.user_id = %d
         GROUP BY $FOF_TAG_TABLE.tag_id order by $FOF_TAG_TABLE.tag_name";
 
     $result = fof_safe_query($sql, $user_id);
+    $tags = array();
+    while ($row = fof_db_get_row($result))
+    {
+        $tags[$row['tag_id']] = $row;
+    }
 
-    return $result;
+    $cache[$user_id] = $tags;
+
+    return $tags;
 }
 
 function fof_db_get_tag_id_map()
@@ -712,8 +744,8 @@ function fof_db_tag_items($user_id, $tag_id, $items)
         return;
 
     $items = implode(',', (array)$items);
-    $sql = "insert into $FOF_ITEM_TAG_TABLE (user_id, tag_id, item_id, item_published)".
-        " select %d, %d, item_id, item_published from $FOF_ITEM_TABLE".
+    $sql = "insert into $FOF_ITEM_TAG_TABLE (user_id, tag_id, item_id, item_published, feed_id)".
+        " select %d, %d, item_id, item_published, feed_id from $FOF_ITEM_TABLE".
         " where item_id in ($items)".
         " on duplicate key update item_published=values(item_published)";
 
