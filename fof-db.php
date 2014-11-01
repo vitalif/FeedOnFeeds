@@ -745,8 +745,8 @@ function fof_db_tag_items($user_id, $tag_id, $items)
 
     $items = implode(',', (array)$items);
     $sql = "insert into $FOF_ITEM_TAG_TABLE (user_id, tag_id, item_id, item_published, feed_id)".
-        " select %d, %d, item_id, item_published, feed_id from $FOF_ITEM_TABLE".
-        " where item_id in ($items)".
+        " select ".intval($user_id).", ".intval($tag_id).", item_id, item_published, feed_id".
+        " from $FOF_ITEM_TABLE where item_id in ($items)".
         " on duplicate key update item_published=values(item_published)";
 
     $result = fof_db_query($sql, 1);
