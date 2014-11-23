@@ -13080,7 +13080,7 @@ class SimplePie_Parse_Date
 	 *
 	 * @access public
 	 */
-	function get()
+	static function get()
 	{
 		static $object;
 		if (!$object)

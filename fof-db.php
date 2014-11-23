@@ -197,6 +197,13 @@ function fof_db_get_tagged_item_count($user_id, $tag_id)
     );
 }
 
+function fof_db_get_subscribed_users($feed_id)
+{
+    global $FOF_SUBSCRIPTION_TABLE;
+
+    return fof_safe_query("select user_id from $FOF_SUBSCRIPTION_TABLE where $FOF_SUBSCRIPTION_TABLE.feed_id = %d", $feed_id);
+}
+
 function fof_db_is_subscribed($user_id, $feed_url)
 {
     global $FOF_FEED_TABLE, $FOF_SUBSCRIPTION_TABLE;

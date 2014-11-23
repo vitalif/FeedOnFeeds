@@ -503,7 +503,7 @@ function fof_delete_subscription($user_id, $feed_id)
 {
     fof_db_delete_subscription($user_id, $feed_id);
 
-    if(mysql_num_rows(fof_get_subscribed_users($feed_id)) == 0)
+    if(mysql_num_rows(fof_db_get_subscribed_users($feed_id)) == 0)
     {
         fof_db_delete_feed($feed_id);
     }
@@ -655,11 +655,6 @@ function fof_feed_exists($url)
     $feed = fof_db_get_feed_by_url($url);
 
     return $feed;
-}
-
-function fof_get_subscribed_users($feed_id)
-{
-    return fof_db_get_subscribed_users($feed_id);
 }
 
 function fof_generate_sudo_id()
@@ -907,7 +902,7 @@ function fof_apply_plugin_tags($feed_id, $item_id = NULL, $user_id = NULL)
         $users[] = $user_id;
     else
     {
-        $result = fof_get_subscribed_users($feed_id);
+        $result = fof_db_get_subscribed_users($feed_id);
 
         while($row = fof_db_get_row($result))
             $users[] = $row['user_id'];

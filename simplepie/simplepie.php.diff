@@ -1,5 +1,5 @@
---- simplepie.php.orig	2014-11-01 16:24:27.412577890 +0300
-+++ simplepie.php	2014-11-01 16:29:06.248585480 +0300
+--- simplepie.php.orig	2014-11-24 02:39:30.050372020 +0300
++++ simplepie.php	2014-11-24 02:38:16.290370007 +0300
 @@ -43,6 +43,10 @@
   * @todo phpDoc comments
   */
@@ -1350,7 +1350,13 @@
  	{
  		$ipPart = SimplePie_Net_IPv6::SplitV64($ip);
  		$count = 0;
-@@ -13059,7 +13085,7 @@ class SimplePie_Parse_Date
+@@ -13054,12 +13080,12 @@ class SimplePie_Parse_Date
+ 	 *
+ 	 * @access public
+ 	 */
+-	function get()
++	static function get()
+ 	{
  		static $object;
  		if (!$object)
  		{
