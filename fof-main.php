@@ -662,18 +662,6 @@ function fof_get_subscribed_users($feed_id)
     return fof_db_get_subscribed_users($feed_id);
 }
 
-function fof_mark_item_unread($feed_id, $id, $filtered = array())
-{
-    $result = fof_get_subscribed_users($feed_id);
-
-    $users = array();
-    while($row = fof_db_get_row($result))
-        if (!$filtered[$row['user_id']])
-            $users[] = $row['user_id'];
-
-    fof_db_mark_item_unread($users, $id);
-}
-
 function fof_generate_sudo_id()
 {
     global $fof_sudo_id_user;
@@ -732,7 +720,7 @@ function fof_apply_tags($item)
             $filtered[$user_id] = true;
 
     // mark item as unread for some users
-    fof_mark_item_unread($item['feed_id'], $item['item_id'], $filtered);
+    fof_db_mark_item_unread($item['item_id'], array_keys($filtered));
 }
 
 function rss_feed_title($rss)
