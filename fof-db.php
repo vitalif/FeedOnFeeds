@@ -181,10 +181,10 @@ function fof_db_get_item_by_id($item_id)
 function fof_db_get_item_count($user_id)
 {
     global $FOF_ITEM_TABLE, $FOF_SUBSCRIPTION_TABLE;
-
-    return fof_safe_query("select straight_join count(*) as count, $FOF_ITEM_TABLE.feed_id as id".
-        " from $FOF_SUBSCRIPTION_TABLE, $FOF_ITEM_TABLE where $FOF_SUBSCRIPTION_TABLE.user_id = %d".
-        " and $FOF_ITEM_TABLE.feed_id = $FOF_SUBSCRIPTION_TABLE.feed_id group by id", $user_id);
+    return fof_safe_query(
+        "select s.feed_id as id, (select count(*) from $FOF_ITEM_TABLE i where i.feed_id=s.feed_id)".
+        " as count from $FOF_SUBSCRIPTION_TABLE s where s.user_id = %d", $user_id
+    );
 }
 
 function fof_db_get_tagged_item_count($user_id, $tag_id)
