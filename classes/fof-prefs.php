@@ -95,7 +95,7 @@ class FoF_Prefs
 
     function get($k)
     {
-        return $this->prefs[$k];
+        return isset($this->prefs[$k]) ? $this->prefs[$k] : NULL;
     }
 
     function set($k, $v)

@@ -21,7 +21,7 @@ if (fof_is_admin() && isset($_POST['adminprefs']))
     $prefs->set('purge', $_POST['purge']);
     $prefs->set('manualtimeout', $_POST['manualtimeout']);
     $prefs->set('autotimeout', $_POST['autotimeout']);
-    $prefs->set('logging', $_POST['logging'] && 1);
+    $prefs->set('logging', !empty($_POST['logging']));
     $prefs->set('suggestadd', intval($_POST['suggestadd']));
     $prefs->set('topreaders_days', intval($_POST['topreaders_days']));
     $prefs->set('topreaders_count', intval($_POST['topreaders_count']));
@@ -101,7 +101,7 @@ if (isset($_REQUEST['tagfeeds']))
     }
 }
 
-if ($message)
+if (!empty($message))
     $message = join('<br>', $message);
 
 if(isset($_POST['prefs']))
@@ -236,7 +236,7 @@ URL to be linked on shared page: <input type=string name=sharedurl value="<?php 
     while($file = readdir($dirlist))
     {
         fof_log("considering " . $file);
-        if(ereg('\.php$',$file) && is_readable(FOF_DIR . "/plugins/" . $file))
+        if(substr($file, -4) === '.php' && is_readable(FOF_DIR . "/plugins/" . $file))
             $plugins[] = substr($file, 0, -4);
     }
     closedir();
@@ -315,13 +315,13 @@ foreach($feeds as $row)
             $i++;
         }
     }
-    $flt = htmlspecialchars($row['prefs']['filter']);
+    $flt = isset($row['prefs']['filter']) ? htmlspecialchars($row['prefs']['filter']) : '';
     ?>
     </td>
     <td><input class="editbox" type="text" name="tag_<?=$id?>" /></td>
     <td>
         <input type="hidden" name="orighide_<?=$id?>" value="<?=$row['prefs']['hide_content'] ? 1 : 0?>" />
-        <input type="checkbox" value="1" name="hide_<?=$id?>" title="Hide item content by default" <?=$row['prefs']['hide_content'] ? "checked" : ""?> /><label for="hide_<?=$id?>" title="Hide item content by default">Hide</label> |
+        <input type="checkbox" value="1" name="hide_<?=$id?>" title="Hide item content by default" <?= !empty($row['prefs']['hide_content']) ? "checked" : ""?> /><label for="hide_<?=$id?>" title="Hide item content by default">Hide</label> |
         <span id="fspan<?=$id?>" style="display:none">Filter: <input class="editbox" type="text" name="filter_<?=$id?>" value="<?=$flt?>" /></span>
         <span id="ftspan<?=$id?>"><a id="fa<?=$id?>" href="javascript:show_filter('<?=$id?>')">Filter</a><?=$flt ? ": $flt" : ""?></span>
     </td>
@@ -353,6 +353,7 @@ Username: <input type=string name=username> Password: <input type=string name=pa
 <?php
     $result = fof_db_query("select user_name from $FOF_USER_TABLE where user_id > 1");
 
+    $delete_options = '';
     while($row = fof_db_get_row($result))
     {
         $username = $row['user_name'];
