@@ -29,26 +29,17 @@ fof_set_content_type();
 $order = $fof_prefs_obj->get('feed_order');
 $direction = $fof_prefs_obj->get('feed_direction');
 
-if(!isset($_GET['what']))
-{
-    $what = "unread";
-}
-else
-{
-    $what = $_GET['what'];
-}
-
-$when = $_GET['when'];
-
-$search = $_GET['search'];
+$what = !empty($_GET['what']) ? $_GET['what'] : 'unread';
+$when = !empty($_GET['when']) ? $_GET['when'] : NULL;
+$search = !empty($_GET['search']) ? $_GET['search'] : NULL;
 
 echo "<script>what='$what'; when='$when';</script>";
 
 $feeds = fof_get_feeds(fof_current_user(), $order, $direction);
 
+$unread = $starred = $total = 0;
 foreach($feeds as $row)
 {
-    $n++;
     $unread += $row['feed_unread'];
     $starred += $row['feed_starred'];
     $total += $row['feed_items'];
@@ -90,7 +81,6 @@ echo "<script>starred = $starred;</script>";
 $tags = fof_get_tags(fof_current_user());
 
 $n = 0;
-
 foreach($tags as $tag)
 {
     $tag_id = $tag['tag_id'];
@@ -111,6 +101,7 @@ if($n)
 </tr>
 
 <?php
+$t = 0;
 foreach($tags as $tag)
 {
     $tag_name = $tag['tag_name'];
@@ -268,16 +259,3 @@ foreach($feeds as $row)
 </div>
 
 </div>
-
-<?php
-
-$order = $_GET['order'];
-$direction = $_GET['direction'];
-
-if(!isset($order))
-    $order = "title";
-
-if(!isset($direction))
-    $direction = "asc";
-
-?>

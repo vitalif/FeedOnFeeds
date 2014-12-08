@@ -15,42 +15,31 @@
 include_once("fof-main.php");
 include_once("fof-render.php");
 
-if (!isset($_GET['which']))
-	$which = 0;
-else
-	$which = $_GET['which'];
+$which = !empty($_GET['which']) ? $_GET['which'] : 0;
+$order = !empty($_GET['order']) ? $_GET['order'] : $fof_prefs_obj->get('order');
+$what = !empty($_GET['what']) ? $_GET['what'] : 'unread';
 
-$order = $_GET['order'];
+$how = !empty($_GET['how']) ? $_GET['how'] : NULL;
+$feed = !empty($_GET['feed']) ? $_GET['feed'] : NULL;
+$when = !empty($_GET['when']) ? $_GET['when'] : NULL;
+$howmany = !empty($_GET['howmany']) ? $_GET['howmany'] : $fof_prefs_obj->get('howmany');
+$search = !empty($_GET['search']) ? $_GET['search'] : NULL;
 
-if(!isset($_GET['what']))
-	$what = "unread";
-else
-	$what = $_GET['what'];
-
-if(!isset($_GET['order']))
-	$order = $fof_prefs_obj->get("order");
-
-$how = $_GET['how'];
-$feed = $_GET['feed'];
-$when = $_GET['when'];
-$howmany = $_GET['howmany'];
-
-$title = fof_view_title($_GET['feed'], $what, $_GET['when'], $which, $_GET['howmany'], $_GET['search']);
-$noedit = $_GET['noedit'];
+$title = fof_view_title($feed, $what, $when, $which, $howmany, $search);
 
 ?>
 
-<p class="items-title"><?php echo $title?></p>
+<p class="items-title"><?php echo $title ?></p>
 
 <ul id="item-display-controls" class="inline-list">
 	<li class="orderby"><?php
 
-	echo ($order == "desc") ? '[new to old]' : "<a href=\".?feed=$feed&amp;what=$what&amp;when=$when&amp;how=$how&amp;howmany=$howmany&amp;order=desc\">[new to old]</a>" ;
+	echo ($order == "desc") ? '[new to old]' : "<a href=\".?feed=$feed&amp;what=$what&amp;when=$when&amp;how=$how&amp;howmany=$howmany&amp;order=desc\">[new to old]</a>";
 	
 	?></li>
 	<li class="orderby"><?php
 
-	echo ($order == "asc") ? '[old to new]' : "<a href=\".?feed=$feed&amp;what=$what&amp;when=$when&amp;how=$how&amp;howmany=$howmany&amp;order=asc\">[old to new]</a>" ;
+	echo ($order == "asc") ? '[old to new]' : "<a href=\".?feed=$feed&amp;what=$what&amp;when=$when&amp;how=$how&amp;howmany=$howmany&amp;order=asc\">[old to new]</a>";
 	
 	?></li>
 	<li><a href="javascript:flag_all();mark_read()"><strong>Mark all read</strong></a></li>
@@ -71,13 +60,13 @@ $noedit = $_GET['noedit'];
 		<input type="hidden" name="return" />
 
 <?php
-$links = fof_get_nav_links($_GET['feed'], $what, $_GET['when'], $which, $_GET['howmany']);
+$links = fof_get_nav_links($feed, $what, $when, $which, $howmany);
 
 if($links) { ?>
 	<center><?php echo $links ?></center><?php
 }
 
-$result = fof_get_items(fof_current_user(), $_GET['feed'], $what, $_GET['when'], $which, $_GET['howmany'], $order, $_GET['search']);
+$result = fof_get_items(fof_current_user(), $feed, $what, $when, $which, $howmany, $order, $search);
 
 $first = true;
 
@@ -86,7 +75,7 @@ foreach($result as $row)
 	$item_id = $row['item_id'];
 	if($first) print "<script>firstItem = 'i$item_id'; </script>";
 	$first = false;
-	print '<div class="item '.($row['prefs']['hide_content'] ? 'hidden' : 'shown').'" id="i' . $item_id . '"  onclick="return itemClicked(event)">';
+	print '<div class="item '.(!empty($row['prefs']['hide_content']) ? 'hidden' : 'shown').'" id="i' . $item_id . '"  onclick="return itemClicked(event)">';
 	fof_render_item($row);
 	print '</div>';
 }

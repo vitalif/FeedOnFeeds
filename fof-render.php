@@ -57,11 +57,10 @@ function fof_render_item($item)
 	$item_title = $item['item_title'];
 	$item_author = $item['item_author'];
 	$item_content = $item['item_content'];
-	$item_read = $item['item_read'];
 
 	$prefs = fof_prefs();
 	$offset = $prefs['tzoffset'];
-	if ($prefs['dst'])
+	if (!empty($prefs['dst']))
 		$offset += date('I');
 
 	$item_published = gmdate("Y-n-d g:ia", $item['item_published'] + $offset*60*60);
@@ -70,7 +69,7 @@ function fof_render_item($item)
 
 	if(!$item_title) $item_title = "[no title]";
 	
-	if($_GET['search'])
+	if(!empty($_GET['search']))
 	{
 		$item_content = do_highlight("<span>$item_content</span>", $_GET['search'], "highlight");
 		$item_title = do_highlight("<span>$item_title</span>", $_GET['search'], "highlight");

@@ -1,5 +1,5 @@
---- simplepie.php.orig	2014-11-24 02:39:30.050372020 +0300
-+++ simplepie.php	2014-11-24 02:38:16.290370007 +0300
+--- simplepie.php.orig	2014-12-09 01:45:22.705342569 +0300
++++ simplepie.php	2014-12-09 01:45:29.873342765 +0300
 @@ -43,6 +43,10 @@
   * @todo phpDoc comments
   */
@@ -1292,7 +1292,7 @@
  					$target->set_scheme($base->get_scheme());
  					$target->set_userinfo($base->get_userinfo());
  					$target->set_host($base->get_host());
-@@ -11769,11 +11799,7 @@ class SimplePie_IRI
+@@ -11769,12 +11799,8 @@ class SimplePie_IRI
  	 */
  	function parse_iri($iri)
  	{
@@ -1301,10 +1301,12 @@
 -		{
 -			$match[$i] = '';
 -		}
+-		return array('scheme' => $match[2], 'authority' => $match[4], 'path' => $match[5], 'query' => $match[7], 'fragment' => $match[9]);
 +		preg_match('/^(([^:\/?#]+):)?(\/\/(\/*[^\/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?$/', $iri, $match);
- 		return array('scheme' => $match[2], 'authority' => $match[4], 'path' => $match[5], 'query' => $match[7], 'fragment' => $match[9]);
++		return array('scheme' => $match[2], 'authority' => $match[4], 'path' => $match[5], 'query' => isset($match[7]) ? $match[7] : '', 'fragment' => isset($match[9]) ? $match[9] : '');
  	}
  
+ 	/**
 @@ -12056,7 +12082,7 @@ class SimplePie_IRI
  		}
  		else

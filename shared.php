@@ -16,10 +16,10 @@ $fof_no_login = true;
 include_once("fof-main.php");
 include_once("fof-render.php");
 
-$user = intval($_GET['user']);
-if(!isset($user)) die;
+$user = !empty($_GET['user']) ? intval($_GET['user']) : 0;
+if(!$user) die;
 
-$format = $_GET['format'];
+$format = !empty($_GET['format']) ? $_GET['format'] : '';
 
 $prefs = new FoF_Prefs($user);
 $sharing = $prefs->get("sharing");
@@ -45,10 +45,10 @@ if(isset($_GET['feed']))
 }
 
 $when = NULL;
-if(preg_match('#^\d+/\d+/\d+$#s', $_GET['when']))
+if(isset($_GET['when']) && preg_match('#^\d+/\d+/\d+$#s', $_GET['when']))
     $when = $_GET['when'];
 
-$offset = intval($_GET['offset']);
+$offset = isset($_GET['offset']) ? intval($_GET['offset']) : 0;
 
 $result = fof_get_items($user, $feed, $what, $when, $offset, 101);
 if (count($result) > 100)
@@ -200,7 +200,6 @@ foreach($result as $item)
     $item_id = $item['item_id'];
     $item_title = $item['item_title'];
     $item_content = $item['item_content'];
-    $item_read = $item['item_read'];
 
     $item_published = gmdate("Y-n-d g:ia", $item['item_published'] + $offset*60*60);
     $item_cached = gmdate("Y-n-d g:ia", $item['item_cached'] + $offset*60*60);

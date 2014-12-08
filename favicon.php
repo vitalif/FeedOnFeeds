@@ -12,7 +12,7 @@
  */
 require_once('simplepie/simplepie.php');
 
-if(file_exists("./cache/" . $_GET[i] . ".spi"))
+if(file_exists("./cache/" . $_GET['i'] . ".spi"))
 {
     SimplePie_Misc::display_cached_file($_GET['i'], './cache', 'spi');
 }

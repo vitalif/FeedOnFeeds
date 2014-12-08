@@ -41,7 +41,7 @@ function fof_safe_query(/* $query, [$args...]*/)
 {
     $args  = func_get_args();
     $query = array_shift($args);
-    if(is_array($args[0])) $args = $args[0];
+    if(isset($args[0]) && is_array($args[0])) $args = $args[0];
     $args  = array_map('mysql_real_escape_string', $args);
     $query = vsprintf($query, $args);
 
@@ -57,6 +57,7 @@ function fof_db_query($sql, $live=0)
 
     $result = mysql_query($sql, $fof_connection);
 
+    $num = 0;
     if(is_resource($result)) $num = mysql_num_rows($result);
     if($result) $affected = mysql_affected_rows($fof_connection);
 
@@ -150,8 +151,11 @@ function fof_db_feed_update_metadata($feed_id, $url, $title, $link, $description
 function fof_db_get_latest_item_age($user_id)
 {
     global $FOF_SUBSCRIPTION_TABLE, $FOF_ITEM_TABLE;
-
-    $result = fof_db_query("SELECT max( item_cached ) AS \"max_date\", $FOF_ITEM_TABLE.feed_id as \"id\" FROM $FOF_ITEM_TABLE GROUP BY $FOF_ITEM_TABLE.feed_id");
+    $result = fof_safe_query(
+        "select max(i.item_cached) max_date, i.feed_id id".
+        " from $FOF_ITEM_TABLE i, $FOF_SUBSCRIPTION_TABLE s".
+        " where s.user_id=%d and s.feed_id=i.feed_id group by i.feed_id", $user_id
+    );
     return $result;
 }
 
@@ -324,7 +328,7 @@ function fof_db_get_items($user_id = 1, $feed = NULL, $what = "unread",
     $user_id = intval($user_id);
     $prefs = fof_prefs();
     $offset = $prefs['tzoffset'];
-    if ($prefs['dst'])
+    if (!empty($prefs['dst']))
         $offset += date('I');
 
     if (!is_null($when) && $when != "")
@@ -402,7 +406,7 @@ function fof_db_get_items($user_id = 1, $feed = NULL, $what = "unread",
 
     $order_by = "order by $pubdate desc $limit_clause ";
 
-    $query = "$select FROM $from $where $group $order_by";
+    $query = "$select FROM $from $where $order_by";
     $result = fof_safe_query($query, $args);
     if (mysql_num_rows($result) == 0)
         return array();

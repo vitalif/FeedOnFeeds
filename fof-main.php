@@ -31,9 +31,9 @@ $fof_tag_prefilters = array();
 
 fof_db_connect();
 
-if(!$fof_installer)
+if (empty($fof_installer))
 {
-    if(!$fof_no_login)
+    if (empty($fof_no_login))
     {
         require_user();
         $fof_prefs_obj = FoF_Prefs::instance();
@@ -301,100 +301,76 @@ function fof_get_feeds($user_id, $order = 'feed_title', $direction = 'asc')
 
     $result = fof_db_get_subscriptions($user_id);
 
-    $i = 0;
-
-    while($row = fof_db_get_row($result))
+    while ($row = fof_db_get_row($result))
     {
-        $id = $row['feed_id'];
         $age = $row['feed_cache_date'];
-
-        $feeds[$i]['prefs'] = unserialize($row['subscription_prefs']);
-        $feeds[$i]['feed_id'] = $id;
-        $feeds[$i]['feed_url'] = $row['feed_url'];
-        $feeds[$i]['feed_title'] = $row['feed_title'];
-        $feeds[$i]['feed_link'] = $row['feed_link'];
-        $feeds[$i]['feed_description'] = $row['feed_description'];
-        $feeds[$i]['feed_image'] = $row['feed_image'];
-        $feeds[$i]['feed_age'] = $age;
-
         list($agestr, $agestrabbr) = fof_nice_time_stamp($age);
-
-        $feeds[$i]['agestr'] = $agestr;
-        $feeds[$i]['agestrabbr'] = $agestrabbr;
-
-        $i++;
+        $feeds[$row['feed_id']] = array(
+            'prefs' => unserialize($row['subscription_prefs']),
+            'feed_id' => $row['feed_id'],
+            'feed_url' => $row['feed_url'],
+            'feed_title' => $row['feed_title'],
+            'feed_link' => $row['feed_link'],
+            'feed_description' => $row['feed_description'],
+            'feed_image' => $row['feed_image'],
+            'feed_age' => $age,
+            'agestr' => $agestr,
+            'agestrabbr' => $agestrabbr,
+            'feed_items' => 0,
+            'feed_read' => 0,
+            'feed_unread' => 0,
+            'feed_starred' => 0,
+            'max_date' => NULL,
+            'lateststr' => '',
+            'lateststrabbr' => '',
+        );
     }
 
     $tags = fof_db_get_tag_id_map();
 
-    for($i=0; $i<count($feeds); $i++)
+    foreach ($feeds as &$feed)
     {
-        $feeds[$i]['tags'] = array();
-        if(is_array($feeds[$i]['prefs']['tags']))
+        $feed['tags'] = array();
+        if (is_array($feed['prefs']['tags']))
         {
-            foreach($feeds[$i]['prefs']['tags'] as $tag)
+            foreach ($feed['prefs']['tags'] as $tag)
             {
-                $feeds[$i]['tags'][] = $tags[$tag];
+                $feed['tags'][] = $tags[$tag];
             }
         }
     }
 
     $result = fof_db_get_item_count($user_id);
-
-    while($row = fof_db_get_row($result))
+    while ($row = fof_db_get_row($result))
     {
-        for($i=0; $i<count($feeds); $i++)
-        {
-            if($feeds[$i]['feed_id'] == $row['id'])
-            {
-                $feeds[$i]['feed_items'] = $row['count'];
-                $feeds[$i]['feed_read'] = $row['count'];
-                $feeds[$i]['feed_unread'] = 0;
-            }
-        }
+        $feeds[$row['id']]['feed_items'] = $row['count'];
+        $feeds[$row['id']]['feed_read'] = $row['count'];
     }
 
     $result = fof_db_get_tagged_item_count($user_id, 1);
-
-    while($row = fof_db_get_row($result))
-        for($i=0; $i<count($feeds); $i++)
-            if($feeds[$i]['feed_id'] == $row['id'])
-                $feeds[$i]['feed_unread'] = $row['count'];
-
-    foreach($feeds as $feed)
+    while ($row = fof_db_get_row($result))
     {
-        $feed['feed_starred'] = 0;
+        $feeds[$row['id']]['feed_unread'] = $row['count'];
     }
 
     $result = fof_db_get_tagged_item_count($user_id, 2);
-
-    while($row = fof_db_get_row($result))
+    while ($row = fof_db_get_row($result))
     {
-        for($i=0; $i<count($feeds); $i++)
-        {
-            if($feeds[$i]['feed_id'] == $row['id'])
-            {
-                $feeds[$i]['feed_starred'] = $row['count'];
-            }
-        }
+        $feeds[$row['id']]['feed_starred'] = $row['count'];
     }
 
     $result = fof_db_get_latest_item_age($user_id);
-
-    while($row = fof_db_get_row($result))
+    while ($row = fof_db_get_row($result))
     {
-        for($i=0; $i<count($feeds); $i++)
+        if (!isset($feeds[$row['id']]))
         {
-            if($feeds[$i]['feed_id'] == $row['id'])
-            {
-                $feeds[$i]['max_date'] = $row['max_date'];
-                list($agestr, $agestrabbr) = fof_nice_time_stamp($row['max_date']);
-
-                $feeds[$i]['lateststr'] = $agestr;
-                $feeds[$i]['lateststrabbr'] = $agestrabbr;
-
-            }
+            var_dump($row);
+            die();
         }
+        $feeds[$row['id']]['max_date'] = $row['max_date'];
+        list($agestr, $agestrabbr) = fof_nice_time_stamp($row['max_date']);
+        $feeds[$row['id']]['lateststr'] = $agestr;
+        $feeds[$row['id']]['lateststrabbr'] = $agestrabbr;
     }
 
     $feeds = fof_multi_sort($feeds, $order, $direction != "asc");
@@ -408,9 +384,7 @@ function fof_feed_title($feed, $prefs = NULL)
         $prefs = $feed['prefs'];
     if (!$prefs)
         $prefs = fof_db_get_subscription_prefs(fof_current_user(), $feed['feed_id']);
-    $t = $prefs['feed_title'];
-    if (!$t)
-        $t = $feed['feed_title'];
+    $t = !empty($prefs['feed_title']) ? $prefs['feed_title'] : $feed['feed_title'];
     return $t;
 }
 

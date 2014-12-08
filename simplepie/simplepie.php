@@ -11800,7 +11800,7 @@ class SimplePie_IRI
 	function parse_iri($iri)
 	{
 		preg_match('/^(([^:\/?#]+):)?(\/\/(\/*[^\/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?$/', $iri, $match);
-		return array('scheme' => $match[2], 'authority' => $match[4], 'path' => $match[5], 'query' => $match[7], 'fragment' => $match[9]);
+		return array('scheme' => $match[2], 'authority' => $match[4], 'path' => $match[5], 'query' => isset($match[7]) ? $match[7] : '', 'fragment' => isset($match[9]) ? $match[9] : '');
 	}
 
 	/**
