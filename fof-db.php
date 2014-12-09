@@ -57,7 +57,7 @@ function fof_db_query($sql, $live=0)
 
     $result = mysql_query($sql, $fof_connection);
 
-    $num = 0;
+    $num = $affected = 0;
     if(is_resource($result)) $num = mysql_num_rows($result);
     if($result) $affected = mysql_affected_rows($fof_connection);
 

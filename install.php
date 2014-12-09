@@ -80,18 +80,21 @@ $iconv_ok = extension_loaded('iconv');
 <body><div><center style="font-size: 20px;"><a href="http://feedonfeeds.com/">Feed on Feeds</a> - Installation</center><br>
 
 <?php
-if($_GET['password'] && $_GET['password'] == $_GET['password2'] )
+if (!empty($_GET['password']))
 {
-    $password_hash = md5($_GET['password'] . 'admin');
-    fof_safe_query("insert into $FOF_USER_TABLE (user_id, user_name, user_password_hash, user_level) values (1, 'admin', '%s', 'admin')", $password_hash);
-    echo '<center><b>OK!  Setup complete! <a href=".">Login as admin</a>, and start subscribing!</center></b></div></body></html>';
-}
-else
-{
-    if($_GET['password'] != $_GET['password2'] )
+    if ($_GET['password'] == $_GET['password2'])
+    {
+        $password_hash = md5($_GET['password'] . 'admin');
+        fof_safe_query("insert into $FOF_USER_TABLE (user_id, user_name, user_password_hash, user_level) values (1, 'admin', '%s', 'admin')", $password_hash);
+        echo '<center><b>OK!  Setup complete! <a href=".">Login as admin</a>, and start subscribing!</center></b></div></body></html>';
+    }
+    else
     {
         echo '<center><font color="red">Passwords do not match!</font></center><br><br>';
     }
+}
+else
+{
 ?>
 
 Checking compatibility...
@@ -172,7 +175,7 @@ CREATE TABLE IF NOT EXISTS `$FOF_FEED_TABLE` (
   `feed_cache_attempt_date` int(11) default '0',
   `feed_cache` text,
   PRIMARY KEY (`feed_id`)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB COLLATE=utf8_unicode_ci;
 EOQ;
 
 $tables[] = <<<EOQ
@@ -181,7 +184,7 @@ CREATE TABLE IF NOT EXISTS `$FOF_TAG_TABLE` (
   `tag_name` char(100) NOT NULL default '',
   PRIMARY KEY (`tag_id`),
   UNIQUE KEY (`tag_name`)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB COLLATE=utf8_unicode_ci;
 EOQ;
 
 $tables[] = <<<EOQ
@@ -192,7 +195,7 @@ CREATE TABLE IF NOT EXISTS `$FOF_USER_TABLE` (
   `user_level` enum('user','admin') NOT NULL default 'user',
   `user_prefs` text,
   PRIMARY KEY (`user_id`)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB COLLATE=utf8_unicode_ci;
 EOQ;
 
 $tables[] = <<<EOQ
@@ -212,7 +215,7 @@ CREATE TABLE IF NOT EXISTS `$FOF_ITEM_TABLE` (
   KEY `feed_id_item_cached` (`feed_id`,`item_cached`),
   KEY `item_published` (`item_published`),
   FOREIGN KEY (`feed_id`) REFERENCES `$FOF_FEED_TABLE` (`feed_id`) ON UPDATE CASCADE
-) ENGINE=InnoDB;
+) ENGINE=InnoDB COLLATE=utf8_unicode_ci;
 EOQ;
 
 $tables[] = <<<EOQ
@@ -230,7 +233,7 @@ CREATE TABLE IF NOT EXISTS `$FOF_ITEM_TAG_TABLE` (
   FOREIGN KEY (`user_id`) REFERENCES `$FOF_USER_TABLE` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   FOREIGN KEY (`item_id`) REFERENCES `$FOF_ITEM_TABLE` (`item_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   FOREIGN KEY (`feed_id`) REFERENCES `$FOF_FEED_TABLE` (`feed_id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB;
+) ENGINE=InnoDB COLLATE=utf8_unicode_ci;
 EOQ;
 
 $tables[] = <<<EOQ
@@ -241,7 +244,7 @@ CREATE TABLE IF NOT EXISTS `$FOF_SUBSCRIPTION_TABLE` (
   PRIMARY KEY (`feed_id`,`user_id`),
   FOREIGN KEY (`user_id`) REFERENCES `$FOF_USER_TABLE` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   FOREIGN KEY (`feed_id`) REFERENCES `$FOF_FEED_TABLE` (`feed_id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB;
+) ENGINE=InnoDB COLLATE=utf8_unicode_ci;
 EOQ;
 
 foreach($tables as $table)
@@ -254,7 +257,39 @@ Tables exist.<hr>
 Upgrading schema...
 <?php
 
-// FIXME: Need to convert tables from MyISAM to InnoDB, add foreign keys and change character set as part of DB migration
+function add_fk($show_create_table, $table, $column, $ref_table, $action = 'on delete cascade on update cascade')
+{
+    if (!strpos($show_create_table, "FOREIGN KEY (`$column`)") &&
+        !fof_db_query("alter table $table add foreign key ($column) references $ref_table ($column) $action"))
+        exit("Can't add foreign key on $table.$column.  MySQL says: <b>" . mysql_error() . "</b><br>");
+}
+
+$r = fof_db_query("show table status");
+while ($row = mysql_fetch_assoc($r))
+{
+    $table = $row['Name'];
+    $alter = array();
+    if (strtolower($row['Engine']) === 'myisam')
+    {
+        $alter[] = 'engine=innodb';
+    }
+    if (strpos($row['Collation'], 'utf8') === false)
+    {
+        $alter[] = 'convert to character set utf8 collate utf8_unicode_ci';
+    }
+    $r2 = fof_db_query("desc $table");
+    while ($row2 = mysql_fetch_assoc($r2))
+    {
+        if (strtolower($row2['Type']) == 'mediumtext')
+        {
+            $alter[] = 'change '.$row2['Field'].' '.$row2['Field'].' text'.(strtolower($row2['Null']) == 'no' ? ' not null' : '');
+        }
+    }
+    if ($alter && !fof_db_query("alter table $table ".implode(', ', $alter)))
+    {
+        exit("Can't change engine or encoding of $table.  MySQL says: <b>" . mysql_error() . "</b><br>");
+    }
+}
 
 if (!mysql_num_rows(fof_db_query("show columns from $FOF_FEED_TABLE like 'feed_image_cache_date'")) &&
     !fof_db_query("ALTER TABLE $FOF_FEED_TABLE ADD `feed_image_cache_date` INT( 11 ) DEFAULT '0' AFTER `feed_image`;"))
@@ -273,14 +308,19 @@ if (!mysql_num_rows(fof_db_query("show columns from $FOF_ITEM_TABLE like 'item_a
     !fof_db_query("ALTER TABLE $FOF_ITEM_TABLE ADD `item_author` text NOT NULL AFTER `item_title`;"))
     exit("Can't add column item_author to table $FOF_ITEM_TABLE.  MySQL says: <b>" . mysql_error() . "</b><br>");
 
-$check = fof_db_query("show create table $FOF_ITEM_TABLE");
-$check = mysql_fetch_row($check);
+$check = mysql_fetch_row(fof_db_query("show create table $FOF_ITEM_TABLE"));
 if (strpos($check[1], 'KEY `feed_id`') !== false &&
     !fof_db_query("alter table $FOF_ITEM_TABLE drop key feed_id, add key item_published (item_published)"))
     exit("Can't drop key feed id / add key item_published to table $FOF_ITEM_TABLE.  MySQL says: <b>" . mysql_error() . "</b><br>");
 
-$check = fof_db_query("show create table $FOF_ITEM_TAG_TABLE");
-$check = mysql_fetch_row($check);
+add_fk($check[1], $FOF_ITEM_TABLE, 'feed_id', $FOF_FEED_TABLE, 'on update cascade');
+
+$check = mysql_fetch_row(fof_db_query("show create table $FOF_ITEM_TAG_TABLE"));
+
+add_fk($check[1], $FOF_ITEM_TAG_TABLE, 'tag_id', $FOF_TAG_TABLE);
+add_fk($check[1], $FOF_ITEM_TAG_TABLE, 'user_id', $FOF_USER_TABLE);
+add_fk($check[1], $FOF_ITEM_TAG_TABLE, 'item_id', $FOF_ITEM_TABLE);
+
 if (strpos($check[1], 'PRIMARY KEY (`user_id`,`item_id`,`tag_id`)') !== false &&
     !fof_db_query("alter table $FOF_ITEM_TAG_TABLE add key user_id (user_id),".
         " add key item_id_user_id_tag_id (item_id, user_id, tag_id), drop primary key,".
@@ -301,9 +341,7 @@ if (mysql_num_rows(fof_db_query("select count(*) from $FOF_ITEM_TAG_TABLE where 
         " where it.feed_id=0 and it.item_id=i.item_id"))
     exit("Can't copy item_published and feed_id from $FOF_ITEM_TABLE to $FOF_ITEM_TAG_TABLE. MySQL says: <b>" . mysql_error() . "</b><br>");
 
-if (!strpos($check[1], 'FOREIGN KEY (`feed_id`)') &&
-    !fof_db_query("alter table $FOF_ITEM_TAG_TABLE add foreign key (feed_id) references $FOF_FEED_TABLE (feed_id) on delete cascade on update cascade"))
-    exit("Can't add feed_id foreign key to $FOF_ITEM_TAG_TABLE. MySQL says: <b>" . mysql_error() . "</b><br>");
+add_fk($check[1], $FOF_ITEM_TAG_TABLE, 'feed_id', $FOF_FEED_TABLE);
 
 ?>
 Schema up to date.<hr>
