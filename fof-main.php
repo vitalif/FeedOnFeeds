@@ -23,8 +23,6 @@ require_once('fof-config.php');
 require_once('fof-db.php');
 require_once('classes/fof-prefs.php');
 require_once('simplepie/simplepie.php');
-#if (file_exists(dirname(__FILE__).'/login-external.php'))
-#    require_once(dirname(__FILE__).'/login-external.php');
 
 $fof_item_prefilters = array();
 $fof_tag_prefilters = array();
