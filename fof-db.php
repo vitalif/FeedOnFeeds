@@ -343,6 +343,7 @@ function fof_db_get_items($user_id = 1, $feed = NULL, $what = "unread",
         $end = $begin + (24 * 60 * 60);
     }
 
+    $limit_clause = '';
     if (is_numeric($start))
     {
         if (!is_numeric($limit))
@@ -428,7 +429,10 @@ function fof_db_get_items($user_id = 1, $feed = NULL, $what = "unread",
 
     $items = join($ids, ", ");
 
-    $result = fof_safe_query("select $FOF_TAG_TABLE.tag_name, $FOF_ITEM_TAG_TABLE.item_id from $FOF_TAG_TABLE, $FOF_ITEM_TAG_TABLE where $FOF_TAG_TABLE.tag_id = $FOF_ITEM_TAG_TABLE.tag_id and $FOF_ITEM_TAG_TABLE.item_id in (%s) and $FOF_ITEM_TAG_TABLE.user_id = %d", $items, $user_id);
+    $result = fof_safe_query(
+        "select t.tag_name, it.item_id from $FOF_TAG_TABLE t, $FOF_ITEM_TAG_TABLE it".
+        " where t.tag_id = it.tag_id and it.item_id in (%s) and it.user_id = %d", $items, $user_id
+    );
     while ($row = fof_db_get_row($result))
     {
         $item_id = $row['item_id'];
