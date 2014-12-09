@@ -380,20 +380,24 @@ function fof_get_feeds($user_id, $order = 'feed_title', $direction = 'asc')
 
 function fof_feed_title($feed, $prefs = NULL)
 {
-    if (!$prefs)
+    if (!$prefs && !empty($feed['prefs']))
+    {
         $prefs = $feed['prefs'];
+    }
     if (!$prefs)
+    {
         $prefs = fof_db_get_subscription_prefs(fof_current_user(), $feed['feed_id']);
+    }
     $t = !empty($prefs['feed_title']) ? $prefs['feed_title'] : $feed['feed_title'];
     return $t;
 }
 
-function fof_view_title($feed=NULL, $what="new", $when=NULL, $start=NULL, $limit=NULL, $search=NULL)
+function fof_view_title($feed = NULL, $what = "new", $when = NULL, $start = NULL, $limit = NULL, $search = NULL)
 {
     $prefs = fof_prefs();
     $title = "feed on feeds";
 
-    if(!is_null($when) && $when != "")
+    if (!is_null($when) && $when != "")
     {
         $title .= ' - ' . $when;
     }
@@ -991,10 +995,12 @@ function fof_get_widgets($item)
         return false;
     }
 
-    foreach($fof_item_widgets as $widget)
+    $widgets = array();
+    foreach ($fof_item_widgets as $widget)
     {
         $w = $widget($item);
-        if($w) $widgets[] = $w;
+        if ($w)
+            $widgets[] = $w;
     }
 
     return $widgets;

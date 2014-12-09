@@ -16,13 +16,13 @@
 
 include("header.php");
 
-$url = $_REQUEST['rss_url'];
-$new_tags = $_REQUEST['new_tags'];
-$login = $_REQUEST['basic_login'];
-$password = $_REQUEST['basic_password'];
-$opml = $_REQUEST['opml_url'];
-$file = $_POST['opml_file'];
-$unread = $_REQUEST['unread'];
+$url = @$_REQUEST['rss_url'];
+$new_tags = @$_REQUEST['new_tags'];
+$login = @$_REQUEST['basic_login'];
+$password = @$_REQUEST['basic_password'];
+$opml = @$_REQUEST['opml_url'];
+$file = @$_POST['opml_file'];
+$unread = @$_REQUEST['unread'];
 
 if ($url && !preg_match('!^[a-z0-9_]+://!is', $url))
     $url = "http://$url";
@@ -32,7 +32,7 @@ if ($login == '%user%')
 
 $feeds = array();
 
-if ($_REQUEST['do'])
+if (!empty($_REQUEST['do']))
 {
     if ($opml)
     {
@@ -55,7 +55,7 @@ if ($_REQUEST['do'])
 
 $url = preg_replace('!^([a-z0-9_]+)://([^/]*:[^/]*@)?!is', '\1://', $url);
 
-if ($_FILES['opml_file']['tmp_name'])
+if (!empty($_FILES['opml_file']['tmp_name']))
 {
     if(!$content_array = file($_FILES['opml_file']['tmp_name']))
     {
@@ -69,7 +69,7 @@ if ($_FILES['opml_file']['tmp_name'])
 }
 
 $add_feed_url = "http";
-if($_SERVER["HTTPS"] == "on")
+if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on')
     $add_feed_url = "https";
 $add_feed_url .= "://" . $_SERVER["HTTP_HOST"] . $_SERVER["SCRIPT_NAME"];
 ?>

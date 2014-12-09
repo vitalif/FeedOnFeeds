@@ -441,19 +441,25 @@ function fof_db_get_items($user_id = 1, $feed = NULL, $what = "unread",
 
 function fof_db_get_item($user_id, $item_id)
 {
-    global $FOF_SUBSCRIPTION_TABLE, $FOF_FEED_TABLE, $FOF_ITEM_TABLE, $FOF_ITEM_TAG_TABLE, $FOF_TAG_TABLE;
+    global $FOF_FEED_TABLE, $FOF_ITEM_TABLE, $FOF_ITEM_TAG_TABLE, $FOF_TAG_TABLE;
 
-    $query = "select $FOF_FEED_TABLE.feed_image as feed_image, $FOF_FEED_TABLE.feed_title as feed_title, $FOF_FEED_TABLE.feed_link as feed_link, $FOF_FEED_TABLE.feed_description as feed_description, $FOF_ITEM_TABLE.item_id as item_id, $FOF_ITEM_TABLE.item_link as item_link, $FOF_ITEM_TABLE.item_title as item_title, $FOF_ITEM_TABLE.item_cached, $FOF_ITEM_TABLE.item_published, $FOF_ITEM_TABLE.item_updated, $FOF_ITEM_TABLE.item_content as item_content from $FOF_FEED_TABLE, $FOF_ITEM_TABLE where $FOF_ITEM_TABLE.feed_id=$FOF_FEED_TABLE.feed_id and $FOF_ITEM_TABLE.item_id = %d";
+    $query = "select f.feed_image, f.feed_title, f.feed_link, f.feed_description, i.*".
+        " from $FOF_FEED_TABLE f, $FOF_ITEM_TABLE i where i.feed_id=f.feed_id and i.item_id = %d";
 
     $result = fof_safe_query($query, $item_id);
 
     $item = mysql_fetch_assoc($result);
     $item['tags'] = array();
-    if($user_id)
+    if ($user_id)
     {
-        $result = fof_safe_query("select $FOF_TAG_TABLE.tag_name from $FOF_TAG_TABLE, $FOF_ITEM_TAG_TABLE where $FOF_TAG_TABLE.tag_id = $FOF_ITEM_TAG_TABLE.tag_id and $FOF_ITEM_TAG_TABLE.item_id = %d and $FOF_ITEM_TAG_TABLE.user_id = %d", $item_id, $user_id);
-        while($row = fof_db_get_row($result))
+        $result = fof_safe_query(
+            "select t.tag_name from $FOF_TAG_TABLE t, $FOF_ITEM_TAG_TABLE it".
+            " where t.tag_id = it.tag_id and it.item_id = %d and it.user_id = %d", $item_id, $user_id
+        );
+        while ($row = fof_db_get_row($result))
+        {
             $item['tags'][] = $row['tag_name'];
+        }
     }
 
     return $item;

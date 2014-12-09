@@ -17,8 +17,11 @@ include_once("fof-render.php");
 
 fof_set_content_type();
 
+if (empty($_GET['id']))
+{
+    die("No post ID");
+}
+
 $row = fof_get_item(fof_current_user(), $_GET['id']);
 
 fof_render_item($row);
-
-?>
