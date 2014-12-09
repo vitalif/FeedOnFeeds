@@ -22,11 +22,11 @@ while (list ($key, $val) = each ($_POST))
     }
 }
 
-if ($_REQUEST['deltag'])
+if (!empty($_REQUEST['deltag']))
 {
     fof_untag(fof_current_user(), $_REQUEST['deltag']);
 }
-elseif ($_POST['feed'])
+elseif (!empty($_POST['feed']))
 {
     fof_db_mark_feed_read(fof_current_user(), $_POST['feed']);
 }
