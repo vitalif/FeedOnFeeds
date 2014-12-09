@@ -228,7 +228,8 @@ CREATE TABLE IF NOT EXISTS `$FOF_ITEM_TAG_TABLE` (
   KEY `item_id_user_id_tag_id` (item_id, user_id, tag_id),
   FOREIGN KEY (`tag_id`) REFERENCES `$FOF_TAG_TABLE` (`tag_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   FOREIGN KEY (`user_id`) REFERENCES `$FOF_USER_TABLE` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  FOREIGN KEY (`item_id`) REFERENCES `$FOF_ITEM_TABLE` (`item_id`) ON DELETE CASCADE ON UPDATE CASCADE
+  FOREIGN KEY (`item_id`) REFERENCES `$FOF_ITEM_TABLE` (`item_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (`feed_id`) REFERENCES `$FOF_FEED_TABLE` (`feed_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 EOQ;
 
@@ -253,6 +254,8 @@ Tables exist.<hr>
 Upgrading schema...
 <?php
 
+// FIXME: Need to convert tables from MyISAM to InnoDB, add foreign keys and change character set as part of DB migration
+
 if (!mysql_num_rows(fof_db_query("show columns from $FOF_FEED_TABLE like 'feed_image_cache_date'")) &&
     !fof_db_query("ALTER TABLE $FOF_FEED_TABLE ADD `feed_image_cache_date` INT( 11 ) DEFAULT '0' AFTER `feed_image`;"))
     exit("Can't add column feed_image_cache_date to table $FOF_FEED_TABLE.  MySQL says: <b>" . mysql_error() . "</b><br>");
@@ -270,9 +273,37 @@ if (!mysql_num_rows(fof_db_query("show columns from $FOF_ITEM_TABLE like 'item_a
     !fof_db_query("ALTER TABLE $FOF_ITEM_TABLE ADD `item_author` text NOT NULL AFTER `item_title`;"))
     exit("Can't add column item_author to table $FOF_ITEM_TABLE.  MySQL says: <b>" . mysql_error() . "</b><br>");
 
-# FIXME: Need to update:
-# alter table fof_item drop key feed_id, add key item_published (item_published);
-# alter table fof_item_tag drop primary key, drop key tag_id, add primary key (tag_id, user_id, item_id), add key user_id (user_id);
+$check = fof_db_query("show create table $FOF_ITEM_TABLE");
+$check = mysql_fetch_row($check);
+if (strpos($check[1], 'KEY `feed_id`') !== false &&
+    !fof_db_query("alter table $FOF_ITEM_TABLE drop key feed_id, add key item_published (item_published)"))
+    exit("Can't drop key feed id / add key item_published to table $FOF_ITEM_TABLE.  MySQL says: <b>" . mysql_error() . "</b><br>");
+
+$check = fof_db_query("show create table $FOF_ITEM_TAG_TABLE");
+$check = mysql_fetch_row($check);
+if (strpos($check[1], 'PRIMARY KEY (`user_id`,`item_id`,`tag_id`)') !== false &&
+    !fof_db_query("alter table $FOF_ITEM_TAG_TABLE add key user_id (user_id),".
+        " add key item_id_user_id_tag_id (item_id, user_id, tag_id), drop primary key,".
+        " add primary key (tag_id, user_id, item_id), drop key tag_id, drop key item_id"))
+    exit("Can't change indexes on table $FOF_ITEM_TAG_TABLE. MySQL says: <b>" . mysql_error() . "</b><br>");
+
+if (!strpos($check[1], '`item_published`') &&
+    !fof_db_query("alter table $FOF_ITEM_TAG_TABLE add item_published int not null default '0',".
+        " add feed_id int not null default 0,".
+        " add key tag_id_user_id_item_published_item_id (tag_id, user_id, item_published, item_id),".
+        " add key tag_id_user_id_feed_id (tag_id, user_id, feed_id),".
+        " add key feed_id (feed_id)"))
+    exit("Can't add item_published and feed_id columns to table $FOF_ITEM_TAG_TABLE. MySQL says: <b>" . mysql_error() . "</b><br>");
+
+if (mysql_num_rows(fof_db_query("select count(*) from $FOF_ITEM_TAG_TABLE where feed_id=0")) &&
+    !fof_db_query("update $FOF_ITEM_TAG_TABLE it, $FOF_ITEM_TABLE i".
+        " set it.item_published=i.item_published, it.feed_id=i.feed_id".
+        " where it.feed_id=0 and it.item_id=i.item_id"))
+    exit("Can't copy item_published and feed_id from $FOF_ITEM_TABLE to $FOF_ITEM_TAG_TABLE. MySQL says: <b>" . mysql_error() . "</b><br>");
+
+if (!strpos($check[1], 'FOREIGN KEY (`feed_id`)') &&
+    !fof_db_query("alter table $FOF_ITEM_TAG_TABLE add foreign key (feed_id) references $FOF_FEED_TABLE (feed_id) on delete cascade on update cascade"))
+    exit("Can't add feed_id foreign key to $FOF_ITEM_TAG_TABLE. MySQL says: <b>" . mysql_error() . "</b><br>");
 
 ?>
 Schema up to date.<hr>
