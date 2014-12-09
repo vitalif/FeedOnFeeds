@@ -39,7 +39,7 @@ if (!empty($_REQUEST['do']))
         $sfile = new SimplePie_File($opml);
         if(!$sfile->success)
         {
-            echo "Cannot open $opml<br>";
+            echo "Cannot open ".htmlspecialchars($opml)."<br>";
             return false;
         }
         $content = $sfile->body;
