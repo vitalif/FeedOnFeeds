@@ -482,12 +482,12 @@ function fof_db_get_subscription_to_tags()
     {
         $prefs = unserialize($row['subscription_prefs']);
         $tags = $prefs['tags'];
-        if(!is_array($r[$row['feed_id']]))
+        if (!isset($r[$row['feed_id']]))
             $r[$row['feed_id']] = array();
         $r[$row['feed_id']][$row['user_id']] = $tags;
-        if ($prefs['filter'])
+        if (!empty($prefs['filter']))
         {
-            if(!is_array($r['filter'][$row['feed_id']]))
+            if (!isset($r['filter'][$row['feed_id']]))
                 $r['filter'][$row['feed_id']] = array();
             $r['filter'][$row['feed_id']][$row['user_id']] = $prefs['filter'];
         }
@@ -768,10 +768,11 @@ function fof_db_get_users()
 
     $result = fof_safe_query("select user_name, user_id, user_prefs from $FOF_USER_TABLE");
 
-    while($row = fof_db_get_row($result))
+    $users = array();
+    while ($row = fof_db_get_row($result))
     {
-        $users[$row['user_id']['user_name']] = $row['user_name'];
-        $users[$row['user_id']['user_prefs']] = unserialize($row['user_prefs']);
+        $users[$row['user_id']]['user_name'] = $row['user_name'];
+        $users[$row['user_id']]['user_prefs'] = unserialize($row['user_prefs']);
     }
 }
 

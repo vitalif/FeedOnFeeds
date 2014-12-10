@@ -1987,7 +1987,9 @@ class SimplePie
 				}
 				else
 				{
-					$file = new $this->file_class($favicon, $this->timeout / 10, 5, array('X-FORWARDED-FOR' => $_SERVER['REMOTE_ADDR']), $this->useragent, $this->force_fsockopen);
+					$file = new $this->file_class($favicon, $this->timeout / 10, 5,
+						isset($_SERVER['REMOTE_ADDR']) ? array('X-FORWARDED-FOR' => $_SERVER['REMOTE_ADDR']) : array(),
+						$this->useragent, $this->force_fsockopen);
 
 					if ($file->success && ($file->method & SIMPLEPIE_FILE_SOURCE_REMOTE === 0 || ($file->status_code === 200 || $file->status_code > 206 && $file->status_code < 300)) && strlen($file->body) > 0)
 					{

@@ -686,9 +686,12 @@ function fof_apply_tags($item)
         $filtered[$user_id] = true;
 
     // regexp filter items
-    foreach((array)$fof_subscription_to_tags['filter'][$item['feed_id']] as $user_id => $filter)
-        if ($filter && (preg_match($filter, $title) || preg_match($filter, $content)))
-            $filtered[$user_id] = true;
+    if (isset($fof_subscription_to_tags['filter'][$item['feed_id']]))
+    {
+        foreach ((array)$fof_subscription_to_tags['filter'][$item['feed_id']] as $user_id => $filter)
+            if ($filter && (preg_match($filter, $title) || preg_match($filter, $content)))
+                $filtered[$user_id] = true;
+    }
 
     // mark item as unread for some users
     fof_db_mark_item_unread($item['item_id'], array_keys($filtered));
@@ -749,7 +752,7 @@ function fof_update_feed($id, $as_user = NULL)
     $feed_id = $feed['feed_id'];
     $n = 0;
 
-    if ($feed['feed_filter'])
+    if (!empty($feed['feed_filter']))
     {
         $filter = @unserialize($feed['feed_filter']);
         if (!$filter || !$filter['re'] || !$filter['tags'])
@@ -827,7 +830,8 @@ function fof_update_feed($id, $as_user = NULL)
     $p = FoF_Prefs::instance();
     $admin_prefs = $p->admin_prefs;
 
-    if($admin_prefs['purge'] != "")
+    $ndelete = 0;
+    if ($admin_prefs['purge'] != "")
     {
         fof_log('purge is ' . $admin_prefs['purge']);
         $count = count($ids);
