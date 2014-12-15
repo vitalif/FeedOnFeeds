@@ -669,14 +669,17 @@ function fof_apply_tags($item)
 {
     global $fof_subscription_to_tags;
 
-    if(!isset($fof_subscription_to_tags))
+    if (!isset($fof_subscription_to_tags))
         $fof_subscription_to_tags = fof_db_get_subscription_to_tags();
 
     // add subscription tags
-    foreach((array)$fof_subscription_to_tags[$item['feed_id']] as $user_id => $tags)
-        if(is_array($tags))
-            foreach($tags as $tag)
-                fof_db_tag_items($user_id, $tag, $item['item_id']);
+    if (!empty($fof_subscription_to_tags[$item['feed_id']]))
+    {
+        foreach ($fof_subscription_to_tags[$item['feed_id']] as $user_id => $tags)
+            if (is_array($tags))
+                foreach($tags as $tag)
+                    fof_db_tag_items($user_id, $tag, $item['item_id']);
+    }
 
     $filtered = array();
 

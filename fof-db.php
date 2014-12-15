@@ -531,7 +531,7 @@ function fof_db_set_feedprop($user_id, $feed_id, $prop, $value)
 {
     $chg = false;
     $prefs = fof_db_get_subscription_prefs($user_id, $feed_id);
-    if ($prefs[$prop] != $value)
+    if (empty($prefs[$prop]) ? $value : ($prefs[$prop] != $value))
     {
         $prefs[$prop] = $value;
         $chg = true;
@@ -550,7 +550,7 @@ function fof_db_untag_feed($user_id, $feed_id, $tag_id)
     fof_db_set_subscription_prefs($user_id, $feed_id, $prefs);
     fof_safe_query(
         "delete from it using $FOF_ITEM_TAG_TABLE it, $FOF_ITEM_TABLE i".
-        " where it.item_id=i.item_id and it.user_id=%d and it.tag_id=%d and i.feed_id=%d".
+        " where it.item_id=i.item_id and it.user_id=%d and it.tag_id=%d and i.feed_id=%d",
         $user_id, $tag_id, $feed_id
     );
 }

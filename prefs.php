@@ -41,8 +41,11 @@ if (isset($_REQUEST['tagfeeds']))
     $allow_prop = array('untag' => 1, 'tag' => 1, 'filter' => 1, 'title' => 1, 'hide' => 1, 'orighide' => 1);
     foreach ($_REQUEST as $k => $v)
     {
-        list($prop, $feed_id) = explode('_', $k);
-        if (!$allow_prop[$prop])
+        $prop = explode('_', $k);
+        if (count($prop) < 2)
+            continue;
+        list($prop, $feed_id) = $prop;
+        if (empty($allow_prop[$prop]))
             continue;
         if (!($feed = fof_db_get_feed_by_id($feed_id)))
             continue;
@@ -87,13 +90,13 @@ if (isset($_REQUEST['tagfeeds']))
             }
         }
         // show item content by default
-        else if ($prop == 'hide' && $v && !$_POST['orighide_'.$feed_id])
+        else if ($prop == 'hide' && $v && empty($_POST['orighide_'.$feed_id]))
         {
             if (fof_db_set_feedprop(fof_current_user(), $feed_id, 'hide_content', true))
                 $message[] = 'Items of feed \''.htmlspecialchars($_REQUEST["title_$feed_id"]).'\' will be shown collapsed by default';
         }
         // hide item content by default
-        else if ($prop == 'orighide' && $v && !$_POST['hide_'.$feed_id])
+        else if ($prop == 'orighide' && $v && empty($_POST['hide_'.$feed_id]))
         {
             if (fof_db_set_feedprop(fof_current_user(), $feed_id, 'hide_content', false))
                 $message[] = 'Items of feed \''.htmlspecialchars($_REQUEST["title_$feed_id"]).'\' will be shown expanded by default';
