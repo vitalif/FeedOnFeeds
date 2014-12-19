@@ -27,7 +27,7 @@ function fof_db_connect()
 
     $fof_connection = mysql_pconnect(FOF_DB_HOST, FOF_DB_USER, FOF_DB_PASS) or die("<br><br>Cannot connect to database.  Please update configuration in <b>fof-config.php</b>.  Mysql says: <i>" . mysql_error() . "</i>");
     mysql_select_db(FOF_DB_DBNAME, $fof_connection) or die("<br><br>Cannot select database.  Please update configuration in <b>fof-config.php</b>.  Mysql says: <i>" . mysql_error() . "</i>");
-    fof_db_query("SET NAMES ".FOF_DB_CHARSET);
+    fof_db_query("SET NAMES utf8");
 }
 
 function fof_db_optimize()

@@ -18,7 +18,6 @@ define('FOF_DB_HOST', "host.example.com");
 define('FOF_DB_USER', "username");
 define('FOF_DB_PASS', "password");
 define('FOF_DB_DBNAME', "database");
-define('FOF_DB_CHARSET', "utf8");
 
 /* You may write an auth plugin by defining function fof_require_user_hook() {}
  * which should try to detect current user and then call fof_set_current_user($user);
