@@ -80,10 +80,7 @@ function fof_log($message, $topic="debug")
 function require_user()
 {
     // FIXME Пилять! Да это же по безопасности, как HTTP Basic авторизация! :-(
-    $user_name = $_COOKIE["user_name"];
-    $user_password_hash = $_COOKIE["user_password_hash"];
-
-    if (!$user_name || !$user_password_hash || !fof_authenticate($user_name, $user_password_hash))
+    if (empty($_COOKIE["user_name"]) || empty($_COOKIE["user_password_hash"]) || !fof_authenticate($_COOKIE["user_name"], $_COOKIE["user_password_hash"]))
     {
         if (!function_exists('fof_require_user_hook') ||
             !fof_require_user_hook())

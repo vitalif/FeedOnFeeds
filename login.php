@@ -18,6 +18,7 @@ require_once("fof-main.php");
 
 fof_set_content_type();
 
+$failed = false;
 if(isset($_POST["user_name"]) && isset($_POST["user_password"]))
 {
     if(fof_authenticate($_POST['user_name'], md5($_POST['user_password'] . $_POST['user_name'])))
@@ -33,8 +34,11 @@ $users = fof_db_get_value("SELECT COUNT(*) FROM fof_user");
 $feeds = fof_db_get_value("SELECT COUNT(*) FROM fof_feed");
 $items = fof_db_get_value("SELECT COUNT(*) FROM fof_item");
 
+$topreaders = false;
 if ($fof_prefs_obj && ($days = intval($fof_prefs_obj->admin_prefs['topreaders_days'])) && ($count = intval($fof_prefs_obj->admin_prefs['topreaders_count'])))
+{
     $topreaders = fof_db_get_top_readers($days, $count);
+}
 
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
