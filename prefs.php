@@ -322,7 +322,7 @@ foreach($feeds as $row)
     </td>
     <td><input class="editbox" type="text" name="tag_<?=$id?>" /></td>
     <td>
-        <input type="hidden" name="orighide_<?=$id?>" value="<?=$row['prefs']['hide_content'] ? 1 : 0?>" />
+        <input type="hidden" name="orighide_<?=$id?>" value="<?=!empty($row['prefs']['hide_content']) ? 1 : 0?>" />
         <input type="checkbox" value="1" name="hide_<?=$id?>" title="Hide item content by default" <?= !empty($row['prefs']['hide_content']) ? "checked" : ""?> /><label for="hide_<?=$id?>" title="Hide item content by default">Hide</label> |
         <span id="fspan<?=$id?>" style="display:none">Filter: <input class="editbox" type="text" name="filter_<?=$id?>" value="<?=$flt?>" /></span>
         <span id="ftspan<?=$id?>"><a id="fa<?=$id?>" href="javascript:show_filter('<?=$id?>')">Filter</a><?=$flt ? ": $flt" : ""?></span>

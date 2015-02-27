@@ -514,14 +514,20 @@ function fof_db_set_subscription_prefs($user_id, $feed_id, $prefs)
 // tag feed and all its items
 function fof_db_tag_feed($user_id, $feed_id, $tag_id)
 {
-    global $FOF_ITEM_TAG_TABLE, $FOF_ITEM_TABLE;
     $prefs = fof_db_get_subscription_prefs($user_id, $feed_id);
     if(!is_array($prefs['tags']) || !in_array($tag_id, $prefs['tags']))
         $prefs['tags'][] = $tag_id;
     fof_db_set_subscription_prefs($user_id, $feed_id, $prefs);
+    fof_db_tag_feed_items($user_id, $feed_id, $tag_id);
+}
+
+function fof_db_tag_feed_items($user_id, $feed_id, $tag_id, $since = 0)
+{
+    global $FOF_ITEM_TAG_TABLE, $FOF_ITEM_TABLE;
     fof_safe_query(
         "insert into $FOF_ITEM_TAG_TABLE (tag_id, user_id, item_id, item_published, feed_id)".
         " select %d, %d, item_id, item_published, feed_id from $FOF_ITEM_TABLE where feed_id=%d".
+        ($since ? " and item_published >= ".$since : '').
         " on duplicate key update item_published=values(item_published)",
         $tag_id, $user_id, $feed_id
     );
@@ -713,7 +719,7 @@ function fof_db_mark_feed_read($user_id, $feed_id)
 
 function fof_db_mark_feed_unread($user_id, $feed_id, $what)
 {
-    fof_db_tag_feed($user_id, $feed_id, 1);
+    fof_db_tag_feed_items($user_id, $feed_id, 1, $what == 'today' ? mktime(0, 0, 0, date('n'), date('j'), date('Y')) : 0);
 }
 
 function fof_db_mark_item_unread($id, $except_users = array())

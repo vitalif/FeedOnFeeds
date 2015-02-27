@@ -14,15 +14,15 @@
 
 include_once("fof-main.php");
 
-$url = $_REQUEST['url'];
-$tags = $_REQUEST['tags'];
-$unread = $_REQUEST['unread'];
+$url = isset($_REQUEST['url']) ? $_REQUEST['url'] : '';
+$tags = isset($_REQUEST['tags']) ? $_REQUEST['tags'] : '';
+$unread = isset($_REQUEST['unread']) ? $_REQUEST['unread'] : '';
 
 list($error, $feed) = fof_subscribe(fof_current_user(), $url, $unread);
 $error .= '<br />';
 foreach (preg_split("/[\s,]*,[\s,]*/", $tags) as $tag)
 {
-    if ($tag)
+    if ($tag !== '')
     {
         fof_tag_feed(fof_current_user(), $feed['feed_id'], $tag);
         $error .= 'Tagged \''.htmlspecialchars($feed['feed_title']).'\' as '.htmlspecialchars($tag).'<br />';
@@ -30,9 +30,11 @@ foreach (preg_split("/[\s,]*,[\s,]*/", $tags) as $tag)
 }
 
 if (preg_match('/HTTP 401/', $error))
+{
     print "<script>
 document.addform.basic_login.style.backgroundColor='#FFC0C0';
 document.addform.basic_password.style.backgroundColor='#FFC0C0';
 document.addform.basic_password.focus();
 </script>";
+}
 print $error;
