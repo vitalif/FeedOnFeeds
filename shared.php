@@ -65,7 +65,7 @@ function lnk($what = NULL, $atom = false, $offset = NULL)
         $what = $_GET['what'];
     if ($what !== NULL)
         $link .= '&what='.urlencode($what);
-    if ($_GET['feed'])
+    if (!empty($_GET['feed']))
         $link .= '&feed='.intval($_GET['feed']);
     if ($offset > 0)
         $link .= '&offset='.intval($offset);
