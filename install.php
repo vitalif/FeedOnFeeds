@@ -34,7 +34,7 @@ function get_curl_version()
 $php_ok = (function_exists('version_compare') && version_compare(phpversion(), '4.3.2', '>='));
 $xml_ok = extension_loaded('xml');
 $pcre_ok = extension_loaded('pcre');
-$mysql_ok = extension_loaded('mysql');
+$mysql_ok = extension_loaded('mysqli');
 
 $curl_ok = (extension_loaded('curl') && version_compare(get_curl_version(), '7.10.5', '>='));
 $zlib_ok = extension_loaded('zlib');
@@ -126,7 +126,7 @@ else
 if($mysql_ok) echo "<span class='pass'>MySQL ok...</span> ";
 else
 {
-    echo "<br><span class='fail'>Your PHP installation is missing the MySQL extension!</span>  This is required by Feed on Feeds.  Sorry!";
+    echo "<br><span class='fail'>Your PHP installation is missing the MySQLi extension!</span>  This is required by Feed on Feeds.  Sorry!";
     echo "</div></body></html>";
     exit;
 }
@@ -248,8 +248,7 @@ CREATE TABLE IF NOT EXISTS `$FOF_SUBSCRIPTION_TABLE` (
 EOQ;
 
 foreach($tables as $table)
-    if(!fof_db_query($table, 1))
-        exit("Can't create table.  MySQL says: <b>" . mysql_error() . "</b><br>");
+    fof_db_query($table, 1);
 
 ?>
 Tables exist.<hr>
@@ -259,87 +258,82 @@ Upgrading schema...
 
 function add_fk($show_create_table, $table, $column, $ref_table, $action = 'on delete cascade on update cascade')
 {
-    if (!strpos($show_create_table, "FOREIGN KEY (`$column`)") &&
-        !fof_db_query("alter table $table add foreign key ($column) references $ref_table ($column) $action"))
-        exit("Can't add foreign key on $table.$column.  MySQL says: <b>" . mysql_error() . "</b><br>");
+    if (!strpos($show_create_table, "FOREIGN KEY (`$column`)"))
+        fof_db_query("alter table $table add foreign key ($column) references $ref_table ($column) $action");
 }
 
 $r = fof_db_query("show table status");
-while ($row = mysql_fetch_assoc($r))
+while ($row = fof_db_get_row($r))
 {
     $table = $row['Name'];
     $alter = array();
     if (strtolower($row['Engine']) === 'myisam')
-    {
         $alter[] = 'engine=innodb';
-    }
     if (strpos($row['Collation'], 'utf8') === false)
-    {
         $alter[] = 'convert to character set utf8 collate utf8_unicode_ci';
-    }
     $r2 = fof_db_query("desc $table");
-    while ($row2 = mysql_fetch_assoc($r2))
-    {
+    while ($row2 = fof_db_get_row($r2))
         if (strtolower($row2['Type']) == 'mediumtext')
-        {
             $alter[] = 'change '.$row2['Field'].' '.$row2['Field'].' text'.(strtolower($row2['Null']) == 'no' ? ' not null' : '');
-        }
-    }
-    if ($alter && !fof_db_query("alter table $table ".implode(', ', $alter)))
-    {
-        exit("Can't change engine or encoding of $table.  MySQL says: <b>" . mysql_error() . "</b><br>");
-    }
+    if ($alter)
+        fof_db_query("alter table $table ".implode(', ', $alter));
 }
 
-if (!mysql_num_rows(fof_db_query("show columns from $FOF_FEED_TABLE like 'feed_image_cache_date'")) &&
-    !fof_db_query("ALTER TABLE $FOF_FEED_TABLE ADD `feed_image_cache_date` INT( 11 ) DEFAULT '0' AFTER `feed_image`;"))
-    exit("Can't add column feed_image_cache_date to table $FOF_FEED_TABLE.  MySQL says: <b>" . mysql_error() . "</b><br>");
+if (!fof_num_rows(fof_db_query("show columns from $FOF_FEED_TABLE like 'feed_image_cache_date'")))
+    fof_db_query("ALTER TABLE $FOF_FEED_TABLE ADD `feed_image_cache_date` INT( 11 ) DEFAULT '0' AFTER `feed_image`;");
 
-if (!mysql_num_rows(fof_db_query("show columns from $FOF_USER_TABLE like 'user_password_hash'")) &&
-    (!fof_db_query("ALTER TABLE $FOF_USER_TABLE CHANGE `user_password` `user_password_hash` VARCHAR( 32 ) NOT NULL") ||
-     !fof_db_query("update $FOF_USER_TABLE set user_password_hash = md5(concat(user_password_hash, user_name))")))
-    exit("Can't change column user_password to user_password_hash.  MySQL says: <b>" . mysql_error() . "</b><br>");
+if (!fof_num_rows(fof_db_query("show columns from $FOF_USER_TABLE like 'user_password_hash'")))
+{
+    fof_db_query("ALTER TABLE $FOF_USER_TABLE CHANGE `user_password` `user_password_hash` VARCHAR( 32 ) NOT NULL");
+    fof_db_query("update $FOF_USER_TABLE set user_password_hash = md5(concat(user_password_hash, user_name))");
+}
 
-if (!mysql_num_rows(fof_db_query("show columns from $FOF_FEED_TABLE like 'feed_cache_attempt_date'")) &&
-    !fof_db_query("ALTER TABLE $FOF_FEED_TABLE ADD `feed_cache_attempt_date` INT( 11 ) DEFAULT '0' AFTER `feed_cache_date`;"))
-    exit("Can't add column feed_cache_attempt_date to table $FOF_FEED_TABLE.  MySQL says: <b>" . mysql_error() . "</b><br>");
+if (!fof_num_rows(fof_db_query("show columns from $FOF_FEED_TABLE like 'feed_cache_attempt_date'")))
+    fof_db_query("ALTER TABLE $FOF_FEED_TABLE ADD `feed_cache_attempt_date` INT( 11 ) DEFAULT '0' AFTER `feed_cache_date`;");
 
-if (!mysql_num_rows(fof_db_query("show columns from $FOF_ITEM_TABLE like 'item_author'")) &&
-    !fof_db_query("ALTER TABLE $FOF_ITEM_TABLE ADD `item_author` text NOT NULL AFTER `item_title`;"))
-    exit("Can't add column item_author to table $FOF_ITEM_TABLE.  MySQL says: <b>" . mysql_error() . "</b><br>");
+if (!fof_num_rows(fof_db_query("show columns from $FOF_ITEM_TABLE like 'item_author'")))
+    fof_db_query("ALTER TABLE $FOF_ITEM_TABLE ADD `item_author` text NOT NULL AFTER `item_title`;");
 
-$check = mysql_fetch_row(fof_db_query("show create table $FOF_ITEM_TABLE"));
-if (strpos($check[1], 'KEY `feed_id`') !== false &&
-    !fof_db_query("alter table $FOF_ITEM_TABLE drop key feed_id, add key item_published (item_published)"))
-    exit("Can't drop key feed id / add key item_published to table $FOF_ITEM_TABLE.  MySQL says: <b>" . mysql_error() . "</b><br>");
+$check = fof_db_get_row(fof_db_query("show create table $FOF_ITEM_TABLE"));
+if (strpos($check[1], 'KEY `feed_id`') !== false)
+    fof_db_query("alter table $FOF_ITEM_TABLE drop key feed_id, add key item_published (item_published)");
 
 add_fk($check[1], $FOF_ITEM_TABLE, 'feed_id', $FOF_FEED_TABLE, 'on update cascade');
 
-$check = mysql_fetch_row(fof_db_query("show create table $FOF_ITEM_TAG_TABLE"));
+$check = fof_db_get_row(fof_db_query("show create table $FOF_ITEM_TAG_TABLE"));
 
 add_fk($check[1], $FOF_ITEM_TAG_TABLE, 'tag_id', $FOF_TAG_TABLE);
 add_fk($check[1], $FOF_ITEM_TAG_TABLE, 'user_id', $FOF_USER_TABLE);
 add_fk($check[1], $FOF_ITEM_TAG_TABLE, 'item_id', $FOF_ITEM_TABLE);
 
-if (strpos($check[1], 'PRIMARY KEY (`user_id`,`item_id`,`tag_id`)') !== false &&
-    !fof_db_query("alter table $FOF_ITEM_TAG_TABLE add key user_id (user_id),".
+if (strpos($check[1], 'PRIMARY KEY (`user_id`,`item_id`,`tag_id`)') !== false)
+{
+    fof_db_query(
+        "alter table $FOF_ITEM_TAG_TABLE add key user_id (user_id),".
         " add key item_id_user_id_tag_id (item_id, user_id, tag_id), drop primary key,".
-        " add primary key (tag_id, user_id, item_id), drop key tag_id, drop key item_id"))
-    exit("Can't change indexes on table $FOF_ITEM_TAG_TABLE. MySQL says: <b>" . mysql_error() . "</b><br>");
+        " add primary key (tag_id, user_id, item_id), drop key tag_id, drop key item_id"
+    );
+}
 
-if (!strpos($check[1], '`item_published`') &&
-    !fof_db_query("alter table $FOF_ITEM_TAG_TABLE add item_published int not null default '0',".
+if (!strpos($check[1], '`item_published`'))
+{
+    fof_db_query(
+        "alter table $FOF_ITEM_TAG_TABLE add item_published int not null default '0',".
         " add feed_id int not null default 0,".
         " add key tag_id_user_id_item_published_item_id (tag_id, user_id, item_published, item_id),".
         " add key tag_id_user_id_feed_id (tag_id, user_id, feed_id),".
-        " add key feed_id (feed_id)"))
-    exit("Can't add item_published and feed_id columns to table $FOF_ITEM_TAG_TABLE. MySQL says: <b>" . mysql_error() . "</b><br>");
+        " add key feed_id (feed_id)"
+    );
+}
 
-if (mysql_num_rows(fof_db_query("select count(*) from $FOF_ITEM_TAG_TABLE where feed_id=0")) &&
-    !fof_db_query("update $FOF_ITEM_TAG_TABLE it, $FOF_ITEM_TABLE i".
+if (fof_num_rows(fof_db_query("select count(*) from $FOF_ITEM_TAG_TABLE where feed_id=0")))
+{
+    fof_db_query(
+        "update $FOF_ITEM_TAG_TABLE it, $FOF_ITEM_TABLE i".
         " set it.item_published=i.item_published, it.feed_id=i.feed_id".
-        " where it.feed_id=0 and it.item_id=i.item_id"))
-    exit("Can't copy item_published and feed_id from $FOF_ITEM_TABLE to $FOF_ITEM_TAG_TABLE. MySQL says: <b>" . mysql_error() . "</b><br>");
+        " where it.feed_id=0 and it.item_id=i.item_id"
+    );
+}
 
 add_fk($check[1], $FOF_ITEM_TAG_TABLE, 'feed_id', $FOF_FEED_TABLE);
 
@@ -379,7 +373,7 @@ Cache directory exists and is writable.<hr>
 
 <?php
 $result = fof_db_query("select * from $FOF_USER_TABLE where user_name = 'admin'");
-if(mysql_num_rows($result) == 0) {
+if (fof_num_rows($result) == 0) {
 ?>
 You now need to choose an initial password for the 'admin' account:<br>
 

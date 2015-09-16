@@ -476,7 +476,7 @@ function fof_delete_subscription($user_id, $feed_id)
 {
     fof_db_delete_subscription($user_id, $feed_id);
 
-    if(mysql_num_rows(fof_db_get_subscribed_users($feed_id)) == 0)
+    if (fof_num_rows(fof_db_get_subscribed_users($feed_id)) == 0)
     {
         fof_db_delete_feed($feed_id);
     }

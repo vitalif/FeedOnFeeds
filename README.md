@@ -32,6 +32,7 @@ New features in this version compared to the original 0.5
 * Very simple CSS-based mobile view
 * Tables are using InnoDB, UTF-8 encoding, and foreign keys
 * Code is cleaned of PHP warnings/notices and compatible with PHP 5.4+
+* PHP mysqli extension is used instead of deprecated mysql
 
 TODO
 ----
@@ -45,7 +46,7 @@ Requirements
 ------------
 
 * A web server running PHP 5 or later (nginx + php5-fpm or Apache).
-* PHP extensions: mysql/mysqlnd, XML, PCRE, cURL, Zlib, mbstring, iconv.
+* PHP extensions: mysqli/mysqlnd, XML, PCRE, cURL, Zlib, mbstring, iconv.
 * MariaDB/MySQL 5 or later. MariaDB 5.5 or later with Barracuda storage format
   (innodb_file_format = barracuda) is recommended.
 

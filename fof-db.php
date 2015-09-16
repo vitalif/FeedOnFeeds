@@ -24,9 +24,8 @@ $FOF_USER_TABLE = FOF_USER_TABLE;
 function fof_db_connect()
 {
     global $fof_connection;
-
-    $fof_connection = mysql_pconnect(FOF_DB_HOST, FOF_DB_USER, FOF_DB_PASS) or die("<br><br>Cannot connect to database.  Please update configuration in <b>fof-config.php</b>.  Mysql says: <i>" . mysql_error() . "</i>");
-    mysql_select_db(FOF_DB_DBNAME, $fof_connection) or die("<br><br>Cannot select database.  Please update configuration in <b>fof-config.php</b>.  Mysql says: <i>" . mysql_error() . "</i>");
+    $fof_connection = mysqli_connect('p:'.FOF_DB_HOST, FOF_DB_USER, FOF_DB_PASS, FOF_DB_DBNAME)
+        or die("<br><br>Cannot connect to database.  Please update configuration in <b>fof-config.php</b>. MySQL says: <i>" . mysqli_connect_error() . "</i>");
     fof_db_query("SET NAMES utf8");
 }
 
@@ -39,12 +38,14 @@ function fof_db_optimize()
 
 function fof_safe_query(/* $query, [$args...]*/)
 {
-    $args  = func_get_args();
+    global $fof_connection;
+    $args = func_get_args();
     $query = array_shift($args);
-    if(isset($args[0]) && is_array($args[0])) $args = $args[0];
-    $args  = array_map('mysql_real_escape_string', $args);
+    if (isset($args[0]) && is_array($args[0]))
+        $args = $args[0];
+    foreach ($args as &$a)
+        $a = $fof_connection->real_escape_string($a);
     $query = vsprintf($query, $args);
-
     return fof_db_query($query);
 }
 
@@ -55,11 +56,13 @@ function fof_db_query($sql, $live=0)
     list($usec, $sec) = explode(" ", microtime());
     $t1 = (float)$sec + (float)$usec;
 
-    $result = mysql_query($sql, $fof_connection);
+    $result = $fof_connection->query($sql);
 
     $num = $affected = 0;
-    if(is_resource($result)) $num = mysql_num_rows($result);
-    if($result) $affected = mysql_affected_rows($fof_connection);
+    if (is_object($result))
+        $num = $result->num_rows;
+    if ($result)
+        $affected = $fof_connection->affected_rows;
 
     list($usec, $sec) = explode(" ", microtime());
     $t2 = (float)$sec + (float)$usec;
@@ -67,16 +70,27 @@ function fof_db_query($sql, $live=0)
     $logmessage = sprintf("%.3f: [%s] (%d / %d)", $elapsed, $sql, $num, $affected);
     fof_log($logmessage, "query");
 
-    if($live)
+    if ($live)
     {
         return $result;
     }
     else
     {
-        if(mysql_errno($fof_connection))
-            fof_die_mysql_error("Cannot run query '$sql': ".mysql_errno($fof_connection).": ".mysql_error($fof_connection));
+        if ($fof_connection->errno)
+            fof_die_mysql_error("Cannot run query '$sql': ".$fof_connection->errno.": ".$fof_connection->error);
         return $result;
     }
+}
+
+function fof_num_rows($result)
+{
+    return $result ? $result->num_rows : 0;
+}
+
+function fof_insert_id()
+{
+    global $fof_connection;
+    return $fof_connection->insert_id;
 }
 
 function fof_die_mysql_error($error)
@@ -93,7 +107,7 @@ function fof_die_mysql_error($error)
 
 function fof_db_get_row($result)
 {
-    return mysql_fetch_array($result);
+    return $result->fetch_assoc();
 }
 
 function fof_db_get_value($sql)
@@ -101,7 +115,7 @@ function fof_db_get_value($sql)
     if (!($result = fof_db_query($sql)) ||
         !($row = fof_db_get_row($result)))
         return NULL;
-    return $row[0];
+    return reset($row);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -214,10 +228,8 @@ function fof_db_is_subscribed($user_id, $feed_url)
 
     $result = fof_safe_query("select $FOF_SUBSCRIPTION_TABLE.feed_id from $FOF_FEED_TABLE, $FOF_SUBSCRIPTION_TABLE where feed_url='%s' and $FOF_SUBSCRIPTION_TABLE.feed_id = $FOF_FEED_TABLE.feed_id and $FOF_SUBSCRIPTION_TABLE.user_id = %d", $feed_url, $user_id);
 
-    if(mysql_num_rows($result) == 0)
-    {
+    if (fof_num_rows($result) == 0)
         return false;
-    }
 
     return true;
 }
@@ -228,12 +240,7 @@ function fof_db_get_feed_by_url($feed_url)
 
     $result = fof_safe_query("select * from $FOF_FEED_TABLE where feed_url='%s'", $feed_url);
 
-    if (mysql_num_rows($result) == 0)
-        return NULL;
-
-    $row = mysql_fetch_array($result);
-
-    return $row;
+    return fof_db_get_row($result);
 }
 
 function fof_db_get_feed_by_id($feed_id, $user_id = false)
@@ -245,12 +252,7 @@ function fof_db_get_feed_by_id($feed_id, $user_id = false)
         $j = "JOIN $FOF_SUBSCRIPTION_TABLE s ON s.user_id=".intval($user_id)." AND s.feed_id=s.feed_id";
     $result = fof_safe_query("select * from $FOF_FEED_TABLE f $j where f.feed_id=%d", $feed_id);
 
-    if (mysql_num_rows($result) == 0)
-        return NULL;
-
-    $row = mysql_fetch_array($result);
-
-    return $row;
+    return fof_db_get_row($result);
 }
 
 function fof_db_add_feed($url, $title, $link, $description)
@@ -259,7 +261,7 @@ function fof_db_add_feed($url, $title, $link, $description)
 
     fof_safe_query("insert into $FOF_FEED_TABLE (feed_url,feed_title,feed_link,feed_description) values ('%s', '%s', '%s', '%s')", $url, $title, $link, $description);
 
-    return mysql_insert_id($fof_connection);
+    return fof_insert_id();
 }
 
 function fof_db_add_subscription($user_id, $feed_id)
@@ -298,12 +300,9 @@ function fof_db_find_item($feed_id, $item_guid)
     global $FOF_FEED_TABLE, $FOF_ITEM_TABLE, $FOF_SUBSCRIPTION_TABLE, $fof_connection;
 
     $result = fof_safe_query("select item_id from $FOF_ITEM_TABLE where feed_id=%d and item_guid='%s'", $feed_id, $item_guid);
-    $row = mysql_fetch_array($result);
+    $row = fof_db_get_row($result);
 
-    if (mysql_num_rows($result) == 0)
-        return NULL;
-    else
-        return($row['item_id']);
+    return $row ? $row['item_id'] : NULL;
 }
 
 $fof_db_item_fields = array('item_guid', 'item_link', 'item_title', 'item_author', 'item_content', 'item_cached', 'item_published', 'item_updated');
@@ -311,13 +310,17 @@ function fof_db_add_item($feed_id, $item)
 {
     global $FOF_FEED_TABLE, $FOF_ITEM_TABLE, $FOF_SUBSCRIPTION_TABLE, $fof_connection, $fof_db_item_fields;
 
+    $args = array();
     $sql = "insert into $FOF_ITEM_TABLE (feed_id, ".implode(",", $fof_db_item_fields).") values (".intval($feed_id);
     foreach ($fof_db_item_fields as $k)
-        $sql .= ", '".mysql_real_escape_string($item[$k])."'";
+    {
+        $sql .= ", '%s'";
+        $args[] = $item[$k];
+    }
     $sql .= ")";
-    fof_db_query($sql);
+    fof_safe_query($sql, $args);
 
-    return mysql_insert_id($fof_connection);
+    return fof_insert_id();
 }
 
 function fof_db_get_items($user_id = 1, $feed = NULL, $what = "unread",
@@ -409,10 +412,10 @@ function fof_db_get_items($user_id = 1, $feed = NULL, $what = "unread",
 
     $query = "$select FROM $from $where $order_by";
     $result = fof_safe_query($query, $args);
-    if (mysql_num_rows($result) == 0)
+    if (fof_num_rows($result) == 0)
         return array();
 
-    while ($row = mysql_fetch_assoc($result))
+    while ($row = fof_db_get_row($result))
     {
         $row['prefs'] = unserialize($row['subscription_prefs']);
         $array[] = $row;
@@ -452,7 +455,7 @@ function fof_db_get_item($user_id, $item_id)
 
     $result = fof_safe_query($query, $item_id);
 
-    $item = mysql_fetch_assoc($result);
+    $item = fof_db_get_row($result);
     $item['tags'] = array();
     if ($user_id)
     {
@@ -575,7 +578,7 @@ function fof_db_item_has_tags($item_id)
     global $FOF_ITEM_TAG_TABLE;
 
     $result = fof_safe_query("select count(*) as \"count\" from $FOF_ITEM_TAG_TABLE where item_id=%d and tag_id > 2", $item_id);
-    $row = mysql_fetch_array($result);
+    $row = fof_db_get_row($result);
 
     return $row["count"];
 }
@@ -585,7 +588,7 @@ function fof_db_get_unread_count($user_id)
     global $FOF_ITEM_TAG_TABLE;
 
     $result = fof_safe_query("select count(*) as \"count\" from $FOF_ITEM_TAG_TABLE where tag_id = 1 and user_id = %d", $user_id);
-    $row = mysql_fetch_array($result);
+    $row = fof_db_get_row($result);
 
     return $row["count"];
 }
@@ -600,10 +603,8 @@ function fof_db_get_tag_unread($user_id)
     );
 
     $counts = array();
-    while($row = fof_db_get_row($result))
-    {
+    while ($row = fof_db_get_row($result))
         $counts[$row['tag_id']] = $row['count'];
-    }
 
     return $counts;
 }
@@ -614,9 +615,7 @@ function fof_db_get_tags($user_id)
 
     static $cache = array();
     if (isset($cache[$user_id]))
-    {
         return $cache[$user_id];
-    }
 
     $sql = "SELECT $FOF_TAG_TABLE.tag_id, $FOF_TAG_TABLE.tag_name, count($FOF_ITEM_TAG_TABLE.item_id) as count
         FROM $FOF_TAG_TABLE
@@ -627,12 +626,9 @@ function fof_db_get_tags($user_id)
     $result = fof_safe_query($sql, $user_id);
     $tags = array();
     while ($row = fof_db_get_row($result))
-    {
         $tags[$row['tag_id']] = $row;
-    }
 
     $cache[$user_id] = $tags;
-
     return $tags;
 }
 
@@ -640,16 +636,11 @@ function fof_db_get_tag_id_map()
 {
     global $FOF_TAG_TABLE;
 
-    $sql = "select * from $FOF_TAG_TABLE";
-
-    $result = fof_safe_query($sql);
+    $result = fof_safe_query("select * from $FOF_TAG_TABLE");
 
     $tags = array();
-
-    while($row = fof_db_get_row($result))
-    {
+    while ($row = fof_db_get_row($result))
         $tags[$row['tag_id']] = $row['tag_name'];
-    }
 
     return $tags;
 }
@@ -660,7 +651,7 @@ function fof_db_create_tag($user_id, $tag)
 
     fof_safe_query("insert into $FOF_TAG_TABLE (tag_name) values ('%s')", $tag);
 
-    return(mysql_insert_id($fof_connection));
+    return fof_insert_id();
 }
 
 function fof_db_get_tag_by_name($user_id, $tag)
@@ -669,14 +660,9 @@ function fof_db_get_tag_by_name($user_id, $tag)
 
     $result = fof_safe_query("select $FOF_TAG_TABLE.tag_id from $FOF_TAG_TABLE where $FOF_TAG_TABLE.tag_name = '%s'", $tag);
 
-    if(mysql_num_rows($result) == 0)
-    {
-        return NULL;
-    }
+    $row = fof_db_get_row($result);
 
-    $row = mysql_fetch_array($result);
-
-    return $row['tag_id'];
+    return $row ? $row['tag_id'] : NULL;
 }
 
 function fof_db_mark_unread($user_id, $items)
@@ -807,7 +793,7 @@ function fof_db_get_user($username, $userid = NULL)
         $result = fof_safe_query("select * from $FOF_USER_TABLE where user_id = %d", $userid);
     else
         $result = fof_safe_query("select * from $FOF_USER_TABLE where user_name = '%s'", $username);
-    $row = mysql_fetch_array($result);
+    $row = fof_db_get_row($result);
     return $row;
 }
 
@@ -864,10 +850,10 @@ function fof_db_authenticate($user_name, $user_password_hash)
 
     $result = fof_safe_query("select * from $FOF_USER_TABLE where user_name = '%s' and user_password_hash = '%s'", $user_name, $user_password_hash);
 
-    if (mysql_num_rows($result) == 0)
+    if (fof_num_rows($result) == 0)
         return false;
 
-    $row = mysql_fetch_array($result);
+    $row = fof_db_get_row($result);
 
     fof_set_current_user($row);
 
@@ -889,8 +875,8 @@ function fof_db_get_is_duplicate_item($item_id, $item_guid, $content_md5)
         " WHERE item_id IN (".join(",",$dups).") AND $FOF_SUBSCRIPTION_TABLE.feed_id=$FOF_ITEM_TABLE.feed_id"
     );
     $users = array();
-    while ($row = mysql_fetch_row($result))
-        $users[] = $row[0];
+    while ($row = fof_db_get_row($result))
+        $users[] = reset($row);
     return $users;
 }
 
@@ -921,7 +907,7 @@ function fof_db_get_top_readers($days, $count = NULL)
  group by u.user_id order by posts desc
  ".(!is_null($count) ? "limit $count" : ""));
     $readers = array();
-    while ($row = mysql_fetch_assoc($result))
+    while ($row = fof_db_get_row($result))
         $readers[] = $row;
     return $readers;
 }
@@ -936,7 +922,7 @@ function fof_db_get_most_popular_feeds($count = NULL)
  group by f.feed_id having readers>1 order by readers desc
  ".(!is_null($count) ? "limit $count" : ""));
     $feeds = array();
-    while ($row = mysql_fetch_assoc($result))
+    while ($row = fof_db_get_row($result))
         $feeds[] = $row;
     return $feeds;
 }
@@ -944,11 +930,11 @@ function fof_db_get_most_popular_feeds($count = NULL)
 function fof_db_get_feed_single_user($id)
 {
     global $FOF_SUBSCRIPTION_TABLE;
-    $result = fof_safe_query("SELECT user_id, COUNT(user_id) FROM $FOF_SUBSCRIPTION_TABLE WHERE feed_id=%d GROUP BY feed_id", $id);
-    $row = mysql_fetch_row($result);
-    if (!$row || $row[1] > 1)
+    $result = fof_safe_query("SELECT user_id, COUNT(user_id) n FROM $FOF_SUBSCRIPTION_TABLE WHERE feed_id=%d GROUP BY feed_id", $id);
+    $row = fof_db_get_row($result);
+    if (!$row || $row['n'] > 1)
         return NULL;
-    return $row[0];
+    return $row['user_id'];
 }
 
 function fof_cache_fn($key)
