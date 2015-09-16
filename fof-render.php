@@ -20,6 +20,7 @@ function do_highlight($full_body, $q, $class){
 	preg_match_all($pat,$full_body,$tag_matches);
 
 	/* loop through and highlight $q value in data and recombine with tags */
+	$full_body_hl = '';
 	for ($i=0; $i< count($tag_matches[0]); $i++) {
 		/* ignore all text within these tags */
 		if (
