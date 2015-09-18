@@ -12,6 +12,7 @@
 
 include_once("fof-main.php");
 
+$items = [];
 while (list ($key, $val) = each ($_POST))
 {
     $first = false;
