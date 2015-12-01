@@ -56,6 +56,8 @@ if (count($result) > 100)
     $next = true;
     array_pop($result);
 }
+else
+    $next = false;
 
 function lnk($what = NULL, $atom = false, $offset = NULL)
 {
