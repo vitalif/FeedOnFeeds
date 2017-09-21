@@ -941,7 +941,7 @@ function fof_init_plugins()
     while ($file = readdir($dirlist))
     {
         fof_log("considering " . $file);
-        if (ereg('\.php$',$file) &&
+        if (substr($file, -4) == '.php' &&
             is_readable(FOF_DIR . "/plugins/" . $file) &&
             !$p->get('plugin_' . substr($file, 0, -4)))
         {

@@ -146,7 +146,7 @@ if(isset($_POST['plugins']))
     $plugins = array();
     $dirlist = opendir(FOF_DIR . "/plugins");
     while($file=readdir($dirlist))
-        if(ereg('\.php$',$file))
+        if(substr($file, -4) == '.php')
             $plugins[] = substr($file, 0, -4);
 
     closedir();
