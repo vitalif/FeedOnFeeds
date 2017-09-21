@@ -299,14 +299,14 @@ foreach($feeds as $row)
 
     if($row['feed_image'] && $prefs->get('favicons')) { ?>
         <td><a href="<?=$url?>" title="<?=htmlspecialchars($row['feed_title'])?>"><img src='<?=$row['feed_image']?>' width='16' height='16' border='0' /></a></td>
-    <? } else { ?>
+    <?php } else { ?>
         <td><a href="<?=$url?>" title="<?=htmlspecialchars($row['feed_title'])?>"><img src='image/feed-icon.png' width='16' height='16' border='0' /></a></td>
-    <? } ?>
+    <?php } ?>
 
     <td><input type="hidden" name="origtitle_<?=$id?>" value="<?=htmlspecialchars($title)?>" /><input class="editbox" type="text" name="title_<?=$id?>" value="<?=htmlspecialchars($title)?>" size="50" /> <a href="<?=$link?>" title="home page"><img src="image/external.png" alt=" " width="10" height="10" /></a</td>
     <td align=right>
 
-    <?
+    <?php
     if($tags)
     {
         $i = 0;
@@ -328,7 +328,7 @@ foreach($feeds as $row)
         <span id="ftspan<?=$id?>"><a id="fa<?=$id?>" href="javascript:show_filter('<?=$id?>')">Filter</a><?=$flt ? ": $flt" : ""?></span>
     </td>
 </tr>
-<? } ?>
+<?php } ?>
 </table>
 <input type="submit" value="Save feed preferences" />
 </form>

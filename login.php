@@ -68,9 +68,9 @@ form { margin: 0 0 0 -3px; }
 <p><?=$days > 1 ? "Last $days days" : "Today's"?> top readers:<br />
 <?php foreach($topreaders as $t) { ?>
 <b><?=htmlspecialchars($t['user_name'])?></b>: <?=$t['posts']?> posts read<br />
-<? } ?>
+<?php } ?>
 </p>
-<? } ?>
+<?php } ?>
 </body>
 
 </html>
